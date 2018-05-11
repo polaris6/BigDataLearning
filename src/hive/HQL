@@ -1,0 +1,68 @@
+Hive操作：
+
+一：说明
+1、在所有的数据库的相关的命令里面DataBase都可以被替换成Schema
+2、COMMENT，为database增加一个描述信息；通过DESCRIBE命令可以查看该信息
+    CREATE DATABASE db01 COMMENT 'this is the first hive db';
+    DESCRIBE DATABASE db01;
+3、LOCATION，Hive会为每个数据库创建一个目录，数据库中的表将会以这个数据库目录的子目录的形式存储。默认的情况下，Hive数据库中的表的数据存储在
+hive.metastore.warehouse.dir 指定的目录下。如果使用的是配置项默认的配置，也就是 /user/hive/warehouse，那么当我们创建数据库 db01 时，
+Hive将会对应的创建一个目录 /user/hive/warehouse/db01.db （数据库的文件目录名是以 .db 结尾的，虽然名字是 .db 但本质是一个文件目录），
+用户在建表时可以通过Location命令来修改这个默认的位置。
+    LOCATION '/db/01'
+4、WITH DBPROPERTIES,用于为数据库增加一些和其相关的键值对属性信息，例如创建的作者，时间等。
+    WITH DBPROPERTIES ('creator' = 'zhangbo', 'date' = '2018-05-08')
+
+
+二：创建数据库
+1、建数据库语法：
+    CREATE (DATABASE|SCHEMA) [IF NOT EXISTS] database_name              //IF NOT EXISTS是可选的
+      [COMMENT database_comment]
+      [LOCATION hdfs_path]
+      [WITH DBPROPERTIES (property_name=property_value, ...)];
+示例：
+    CREATE DATABASE db01
+    COMMENT 'this is the first db'
+    LOCATION '/db/01'
+    WITH DBPROPERTIES ('creator' = 'zhangbo', 'date' = '2018-05-08');
+2、修改数据库：
+可以使用ALTER DATABASE命令修改数据库的DBPROPERTIES键值对属性值，来描述这个数据库的属性信息。数据库的其他元数据信息都是不可更改的，包括数据库名
+和数据库所在的目录位置。
+
+
+三：创建表
+CREATE TABLE IF NOT EXISTS mydb.employees(
+    name    string   COMMENT '雇员姓名',
+    id      int      COMMENT '雇员工号',
+    salary  float    COMMENT '雇员工资')
+COMMENT '雇员信息表'
+TBLPROPERTIES ('creator' = 'zhangbo', 'date' = '2018-05-08')
+LOCATION '/db/02';
+
+用户可以在字段类型后为每个字段加一个注释，也可以为这个表本身加一个注释，还可以定义一个或多个表属性。
+
+用户在建表的时候可以自定义 SerDe 或者使用自带的 SerDe。如果没有指定 ROW FORMAT 或者 ROW FORMAT DELIMITED，将会使用自带的 SerDe。
+SerDe is a short name for “Serializer and Deserializer。
+
+有分区的表可以在创建的时候使用 PARTITIONED BY 语句。一个表可以拥有一个或者多个分区，每一个分区单独存在一个目录下。而且，表和分区都可以对某个列进行 CLUSTERED BY 操作，将若干个列放入一个桶（bucket）中。也可以利用SORT BY 对数据进行排序。这样可以为特定应用提高性能。
+
+如果文件数据是纯文本，可以使用 STORED AS TEXTFILE。如果数据需要压缩，使用 STORED AS SEQUENCE 。
+
+
+
+
+
+四：外部表
+EXTERNAL 关键字可以让用户创建一个外部表，未被external修饰的是内部表，被external修饰的为外部表。
+内部表数据由Hive自身管理，外部表数据由HDFS管理；
+内部表数据存储的位置是hive.metastore.warehouse.dir（默认：/user/hive/warehouse），外部表数据的存储位置由自己制定；
+删除内部表会直接删除元数据（metadata）及存储数据，删除外部表仅仅会删除元数据，HDFS上的文件并不会被删除；
+
+
+https://www.imooc.com/article/9265
+
+
+五：插入操作
+overwrite重写，into追加
+https://blog.csdn.net/liyantianmin/article/details/47106953
+

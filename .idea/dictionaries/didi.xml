@@ -2,7 +2,14 @@
   <dictionary name="didi">
     <words>
       <w>dataset</w>
+      <w>dbproperties</w>
       <w>flatmap</w>
+      <w>groupby</w>
+      <w>hdfs</w>
+      <w>inpath</w>
+      <w>metastore</w>
+      <w>tblproperties</w>
+      <w>zhangbo</w>
     </words>
   </dictionary>
 </component>

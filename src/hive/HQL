@@ -2,9 +2,8 @@ Hive操作：
 
 一：说明
 1、在所有的数据库的相关的命令里面DataBase都可以被替换成Schema
-2、COMMENT，为database增加一个描述信息；通过DESCRIBE命令可以查看该信息
+2、COMMENT，为database增加一个描述信息
     CREATE DATABASE db01 COMMENT 'this is the first hive db';
-    DESCRIBE DATABASE db01;
 3、LOCATION，Hive会为每个数据库创建一个目录，数据库中的表将会以这个数据库目录的子目录的形式存储。默认的情况下，Hive数据库中的表的数据存储在
 hive.metastore.warehouse.dir 指定的目录下。如果使用的是配置项默认的配置，也就是 /user/hive/warehouse，那么当我们创建数据库 db01 时，
 Hive将会对应的创建一个目录 /user/hive/warehouse/db01.db （数据库的文件目录名是以 .db 结尾的，虽然名字是 .db 但本质是一个文件目录），
@@ -28,23 +27,35 @@ Hive将会对应的创建一个目录 /user/hive/warehouse/db01.db （数据库�
 2、修改数据库：
 可以使用ALTER DATABASE命令修改数据库的DBPROPERTIES键值对属性值，来描述这个数据库的属性信息。数据库的其他元数据信息都是不可更改的，包括数据库名
 和数据库所在的目录位置。
+3、查看数据库信息：
+通过DESCRIBE命令可以查看数据库信息（DESC命令查看表的信息）
+DESCRIBE DATABASE db01;
 
 
 三：创建表
-CREATE TABLE IF NOT EXISTS mydb.employees(
-    name    string   COMMENT '雇员姓名',
-    id      int      COMMENT '雇员工号',
-    salary  float    COMMENT '雇员工资')
-COMMENT '雇员信息表'
-TBLPROPERTIES ('creator' = 'zhangbo', 'date' = '2018-05-08')
-LOCATION '/db/02';
+CREATE TABLE bigdata_admin.ods_capri_task(
+  id bigint COMMENT '主键',
+  code string COMMENT '任务编号',
+  name string COMMENT '任务名',
+  ......)
+COMMENT '任务表'
+PARTITIONED BY(
+  year string,
+  month string,
+  day string)
+LOCATION
+  'hdfs://DClusterNmg4/user/hadoop/data/bigdata_admin/ods_capri_task'
+TBLPROPERTIES(
+  'creator' = 'zhangbo',
+  'date' = '2018-05-08');
 
 用户可以在字段类型后为每个字段加一个注释，也可以为这个表本身加一个注释，还可以定义一个或多个表属性。
 
 用户在建表的时候可以自定义 SerDe 或者使用自带的 SerDe。如果没有指定 ROW FORMAT 或者 ROW FORMAT DELIMITED，将会使用自带的 SerDe。
 SerDe is a short name for “Serializer and Deserializer。
 
-有分区的表可以在创建的时候使用 PARTITIONED BY 语句。一个表可以拥有一个或者多个分区，每一个分区单独存在一个目录下。而且，表和分区都可以对某个列进行 CLUSTERED BY 操作，将若干个列放入一个桶（bucket）中。也可以利用SORT BY 对数据进行排序。这样可以为特定应用提高性能。
+有分区的表可以在创建的时候使用 PARTITIONED BY 语句。一个表可以拥有一个或者多个分区，每一个分区单独存在一个目录下。而且，表和分区都可以对某个列
+进行 CLUSTERED BY 操作，将若干个列放入一个桶（bucket）中。也可以利用SORT BY 对数据进行排序。这样可以为特定应用提高性能。
 
 如果文件数据是纯文本，可以使用 STORED AS TEXTFILE。如果数据需要压缩，使用 STORED AS SEQUENCE 。
 

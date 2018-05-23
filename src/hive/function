@@ -1,0 +1,11 @@
+Sql中的函数：
+
+1、from_unixtime()：时间戳转日期函数
+例：from_unixtime(t1,'yyyy-MM-dd HH:mm:ss') 或 from_unixtime(t1,'yyyy-MM-dd')
+其中t1是10位的时间戳值，即1970-1-1至今的秒，13位的毫秒是不可以的，需要先转化为10位的
+如果想截取分钟值，可以直接用 minute(from_unixtime(t1,'yyyy-MM-dd HH:mm:ss'))
+
+2、cast()：数据类型转换函数
+用AS关键字分隔源值和目标数据类型
+例：cast('12' AS int) string转int
+

@@ -1,4 +1,9 @@
 一：Hive介绍
+1、设计初衷：
+我们学习hadoop的时候，为了让那些不太会java语言但是对SQL很熟悉的工程师能够操作基本的MapReduce计算过程，Hive被设计出来了。Hive就好比是
+hadoop在执行MR(MapReduce)程序的一个操作系统，我们可以用简单的SQL语句去代替复杂的MR程序，因为Hive可以将我们的SQL语句转化为MR程序然后去执行。
+Hive的语法和SQL的语法很多地方是相同的，所以说它就是为熟连使用SQL的工程师设计的。
+2、介绍：
 Hive是一个基于Hadoop的数据仓库工具；
 Hive本身不提供数据存储功能，使用HDFS做数据存储；
 Hive也不提供分布式计算框架，Hive的核心工作就是把sql语句翻译成MR程序；

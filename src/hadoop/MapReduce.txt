@@ -25,9 +25,6 @@ reduce过程的目的是将值的集合转换成一个值（例如求和），�
       Emit(AsString(result));
 
 
-
-
-
 Map操作输入输出是一对一还是一对多的问题：
    要分具体的场景，Hadoop中的MapReduce只有map和reduce两个算子，没有flatmap的概念，所以这里map的输出是零到多个。Spark和kafka streams中
 的map是一对一的，flatmap是一对多的。

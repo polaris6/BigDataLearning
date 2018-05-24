@@ -1,0 +1,3 @@
+一、MapReduce简介：
+   MapReduce中作业(job)是客户端执行的单位：它包括输入数据、MapReduce程序和配置信息。Hadoop通过把作业分成若干个小任务(task)来工作，任务分为
+两种类型：map任务和reduce任务。

@@ -7,7 +7,10 @@
       <w>groupby</w>
       <w>hdfs</w>
       <w>inpath</w>
+      <w>jobtracker</w>
+      <w>mapred</w>
       <w>metastore</w>
+      <w>tasktracker</w>
       <w>tblproperties</w>
       <w>unixtime</w>
       <w>zhangbo</w>

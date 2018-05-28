@@ -1,0 +1,17 @@
+git clone <远程仓库地址> ：将远程仓库克隆到本地
+例：git clone git@git.xiaojukeji.com:zhangbo/rt_udf.git
+
+git pull [<远程服务器名>][<远程分支名>] ：远程仓库更新本地仓库
+
+git add <文件名称> / git add . ：从工作区向暂存区添加文件
+例：git add README.md  如果有多个文件用 git add .
+
+git commit -m "提交说明" ：暂存区提交文件至本地仓库
+
+
+
+
+
+
+
+idea提交代码至github时：修改的代码初始显示红色，Git add之后显示绿色，Git commit之后

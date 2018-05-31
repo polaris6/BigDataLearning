@@ -1,0 +1,37 @@
+binlog：二进制文件，记录对数据库内容的修改，由对内容修改的"事件"的文件组成，事件分为三种类型：insert、update、delete 增删改
+作用：用于用户数据库备份和数据恢复
+Canal API完成对binlog的解析后，编码成json格式的字符串
+
+
+binlog示例：
+binlog:
+{
+    "xid": "18994885768",
+    "binlog": "492634100@dd-bin.010697",
+    "time": 1526864759000,
+    "canalTime": 1526864759764,
+    "db": "dos_order",
+    "table": "d_order_base_0531",
+    "event": "d",
+    "columns": [
+        {
+            "n": "xid",
+            "t": "decimal(10,6)",
+            "v": "119.052460",
+            "null": false
+        },
+        {
+            "n": "order_id",
+            "t": "bigint(20) unsigned",
+            "v": "17600362962233",
+            "null": false
+        },
+        {
+            "n": "passenger_id",
+            "t": "bigint(20)",
+            "v": "2890046907708",
+            "null": false
+        }
+    ],
+    "keys": ["order_id"]
+}

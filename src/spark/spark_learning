@@ -1,0 +1,29 @@
+一：Spark编程模型
+    spark在运算期间，将输入数据与中间计算结果保存在内存中，直接在内存中计算。用户也可以将重复利用的数据缓存在内存中，缩短数据读写时间，以提高下次
+计算的效率。spark基于内存计算的特性使其擅长于迭代式与交互式任务，集群规模与spark性能之间呈正比关系。
+
+1、RDD弹性分布式数据集
+    RDD是一个容错的、并行的数据结构，可以让用户显式地将数据存储到磁盘或内存中，并控制数据的分区，它也是不变的(immutable)数据结构存储。RDD本质上
+是逻辑分区记录的集合，在集群中，一个RDD可以包含多个分布在不同节点上的分区，每个分区是一个dataset片段，其中RDD的每个逻辑分区Partition都对应
+Block Manager(物理存储管理器)中的物理数据块Block(保存在内存或硬盘上)。RDD是spark的核心数据结构，通过RDD的依赖关系形成spark的调度顺序，
+spark应用程序本质是一组对RDD的操作。RDD中保存了逻辑分区与物理数据块之间的映射关系，以及父辈RDD的依赖转换关系。
+    RDD的两种创建方式：从文件系统输入(如HDFS)创建 和 从已存在的RDD转换得到新的RDD
+    RDD的两种操作算子：Transformation 和 Action  Transformation类型的算子不是立刻执行，而是延迟执行，也就是说从一个RDD变换为另一个RDD的
+操作需要等到Action操作触发时，才会真正执行。Action类型的算子会触发spark提交作业，并将数据输出到spark系统。无论执行了多少次Transformation操作，
+RDD都不会真正执行运算，只有当Action操作被执行时，运算才会触发。
+    RDD可以相互依赖，如果RDD的每个分区最多只能被一个Child RDD的一个分区使用，称为窄依赖(narrow dependency)；若多个Child RDD分区都可以使用，
+则称为宽依赖(wide dependency)。不同的操作会产生不同的依赖，例如map会产生窄依赖，join会产生宽依赖(join会分为两种，一种是join with inputs
+co-partitioned，输入和输出被分到同等的分区(输入端某个分区的数据在输出端对应分区里必须有)，这种是窄依赖；另一种join with inputs not
+co-partitioned是宽依赖)。
+    RDD支持容错性：RDD天生是支持容错的。首先它自身是一个不变的数据集，其次RDD之间通过lineage产生依赖关系，因此RDD能够记住构建它的操作图，当执行
+任务的worker失败时，完全可以通过操作图获得之前执行的操作，重新计算。因此不用采用replication方式支持容错，很好地降低了跨网络的数据传输成本。
+    RDD的高效性：RDD提供了两方面的特性：persistence(持久化)和partitioning(分区)，用户可以通过persist与partitionBy函数来控制这两个特性。
+RDD的分区特性与并行计算能力(RDD定义了parallerize函数)，使得spark可以更好地利用可伸缩的硬件资源。如果将分区与持久化结合起来，就能更加高效地处理
+海量数据。另外，RDD本质上是一个内存数据集，在访问RDD时，指针只会指向与操作相关的部分，例如存在一个面向列的数据结构，其中一个实现为Int型数组，另一个
+实现为Float型数组，如果只需要访问Int型字段，RDD的指针可以只访问Int数组，避免扫描整个数据结构。
+
+2、Spark算子
+
+
+
+

@@ -1,3 +1,6 @@
+Hadoop主要解决了两件事情：数据的可靠存储和数据的分析处理
+
+
 一、MapReduce简介：
    MapReduce中作业(job)是客户端执行的单位：它包括输入数据、MapReduce程序和配置信息。Hadoop通过把作业分成若干个小任务(task)来工作，任务分为
 两种类型：map任务和reduce任务。
@@ -36,5 +39,5 @@ Reduce端生成一个较大的文件作为reduce的输入。
    最后是reduce阶段，这个过程产生最终的输出结果，并将其写到HDFS。
 
 
-二、HDFS：
+三、HDFS：
    HDFS是Hadoop的分布式文件系统(Hadoop Distributed Filesystem)

@@ -10,6 +10,7 @@
       <w>jobtracker</w>
       <w>mapred</w>
       <w>metastore</w>
+      <w>parallerize</w>
       <w>tasktracker</w>
       <w>tblproperties</w>
       <w>unixtime</w>

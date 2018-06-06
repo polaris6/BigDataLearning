@@ -1,8 +1,18 @@
-层级	       全拼	                    中文说明
-ods	       operational data store	源数据层
-dwd	       data warehouse detail	明细层
-dim	       dimension	            维度层
-dwm	       data warehouse model	    汇总层
-dm	       data market	            集市层
-app	       application	            应用层
+层级	       全拼	                     通用中文说明
+ods	       operational data store	  源数据层
+dwd	       data warehouse detail	  明细层
+dim	       dimension	              维度层
+dwm	       data warehouse model	      汇总层
+dm	       data market	              集市层
+app	       application	              应用层
+
+
+
+DD应用：
+    ETL层（ODS）
+    统计计算层（DW|DWM）
+    数据主题层（DM）
+    明细数据层（DWD|DWV）
+    应用层（APP）
+    维度层（DIM）
 

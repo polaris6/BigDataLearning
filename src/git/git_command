@@ -1,5 +1,5 @@
 git clone <远程仓库地址> ：将远程仓库克隆到本地
-例：git clone git@git.xiaojukeji.com:zhangbo/rt_udf.git
+例：git clone git@git.xxxx.com:zhangbo/rt_udf.git
 
 git pull [<远程服务器名>][<远程分支名>] ：远程仓库更新本地仓库
 

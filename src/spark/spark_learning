@@ -36,15 +36,17 @@ Slave是集群中含有Worker进程的节点，负责管理executor并与Master�
 
 1、Spark运行架构
     Spark集群部署后，需要在主节点和从节点分别启动Master进程和Worker进程，对整个集群进行控制。在一个Spark应用的执行过程中，Driver和Worker是
-两个重要角色。Driver程序是应用逻辑执行的起点，负责应用的解析、切分Stage并调度Task到Executor执行，包含DAGScheduler等重要对象；而多个Worker
+两个重要角色。Driver程序是应用逻辑执行的起点，负责应用的解析、切分Stage并调度Task到Executor执行，包含DAG Scheduler等重要对象；而多个Worker
 用来管理计算节点和创建Executor并行处理任务。在执行阶段，Driver会将Task和Task所依赖的file和jar序列化后传递给对应的Worker机器，同时Executor
 对相应数据分区的任务进行处理。
     每个Application获取专属的executor进程，该进程在Application期间一直驻留，并以多线程方式运行tasks。这种Application隔离机制有其优势，
 从调度角度看(每个Driver调度它自己的任务)，从运行角度看(来自不同Application的Task运行在不同的JVM)。这也意味着Spark Application不能跨应用
 程序共享数据，除非将数据写入到外部存储系统。
+    提交SparkContext的Client应该靠近Worker节点(运行Executor)的节点，最好是在同一个Rack里，因为SparkApplication运行过程中SparkContext
+和Executor之间有大量的信息交换，如果想在远程集群中运行，最好使用RPC将SparkContext提交给集群。
 
 2、Spark运行流程(见图)
-    (1)构建Spark Application的运行环境（启动SparkContext），SparkContext向资源管理器（可以是Standalone、Mesos或YARN）注册并申请运行
+    (1)构建Spark Application的运行环境(启动SparkContext)，SparkContext向资源管理器（可以是Standalone、Mesos或YARN）注册并申请运行
 Executor资源。
     (2)资源管理器分配Executor资源并启动StandaloneExecutorBackend，Executor运行情况将随着心跳发送到资源管理器上。
     (3)Spark在进行transformation计算的时候，不会触发Job，只有执行action操作的时候，才会触发Job。在Driver中SparkContext根据RDD之间的

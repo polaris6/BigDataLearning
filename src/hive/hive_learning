@@ -83,4 +83,10 @@ Hive处理null值的函数 https://blog.csdn.net/qq_34941023/article/details/514
 
 https://blog.csdn.net/freefish_yzx/article/details/77150248
 
-Hive客户端工具：Beeline
+Hive客户端工具：Beeline(数匠坊终端中的别名是newhive)
+
+
+UNION ALL：
+SELECT column_name(s) FROM table_name1
+UNION ALL
+SELECT column_name(s) FROM table_name2

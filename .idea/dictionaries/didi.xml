@@ -1,6 +1,7 @@
 <component name="ProjectDictionaryState">
   <dictionary name="didi">
     <words>
+      <w>bykey</w>
       <w>dataset</w>
       <w>dbproperties</w>
       <w>flatmap</w>
@@ -9,6 +10,7 @@
       <w>inpath</w>
       <w>jobtracker</w>
       <w>mapred</w>
+      <w>mesos</w>
       <w>metastore</w>
       <w>parallerize</w>
       <w>tasktracker</w>

@@ -1,0 +1,36 @@
+Spark应用涉及的基本概念：
+1、Application：
+    spark的应用程序，包含一个driver Program和若干executor。
+2、Driver Program：
+    运行application的main()函数，并且创建SparkContext。
+3、SparkContext：
+    spark应用程序的入口，负责调度各个运算资源，协调各个worker node上的executor。
+4、Worker Node：
+    运行application代码的节点，运行一个或多个executor进程。
+5、Executor：
+    是worker node上的一个进程，负责运行任务和将数据存在内存或者磁盘上。每个application有自己的executors。
+6、Task：
+    executor上的工作单元，RDD中的一个分区对应一个task，是spark中最小的工作单元。
+7、Job：
+    由action算子触发生成的由一个或多个stage组成的计算作业，spark中每个action对应一个job，每个job是一个计算序列的最终结果，这个序列中能够产生
+中间结果的计算就是一个stage。
+8、Stage：
+    每个job会被拆分成很多组task，每组任务被称为stage，也称TaskSet。每个stage执行一些计算，产生一些中间结果，它们的目的是最终生成这个Job的
+计算结果。
+    stage以是否产生shuffle为界定依据(即宽窄依赖)。spark划分stage的整体思路是：从后往前推，遇到宽依赖就断开，划分为一个stage；遇到窄依赖就将
+这个RDD加入该stage中。
+9、Cluster Manager：
+    在集群上获取资源的外部服务(例如：Standalone、Mesos、Yarn)
+10、DAG Scheduler：
+    根据job构建基于stage的DAG，并提交stage给TaskScheduler
+11、Task Scheduler：
+    将TaskSet提交给Worker Node集群运行并返回结果
+12、RDD：
+    RDD是spark的核心数据结构，可以通过一系列算子进行操作。当RDD遇到action算子时，将之前的所有算子形成一个有向无环图(DAG)，再在spark中转化为
+job，提交到集群执行，一个app中可以包含多个job。
+13、Transformation：
+    Transformation返回值还是一个RDD，所有的Transformation采用的都是懒策略，如果只是将Transformation提交是不会执行计算的。
+14、Action：
+    Action返回值不是一个RDD，而是一个scala集合，只有在Action被提交的时候计算才会被触发。
+
+

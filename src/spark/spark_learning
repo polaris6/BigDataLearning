@@ -23,6 +23,39 @@ RDD的分区特性与并行计算能力(RDD定义了parallerize函数)，使得s
 实现为Float型数组，如果只需要访问Int型字段，RDD的指针可以只访问Int数组，避免扫描整个数据结构。
 
 2、Spark算子
+    spark应用程序的本质，就是把需要处理的数据转换为RDD，然后将RDD通过一系列变换(Transformation)和操作(Action)得到结果，这些变换和操作就是
+算子。
+    Transformation：map、filter、flatMap、groupByKey、reduceBykey、union、join、mapValues、sort、partitionBy、sample
+    Action：count、reduce、aggregate、collect、lookup、saveAsTextFile、foreach
+
+
+二：Spark机制原理
+    Spark架构采用了分布式计算中的Master-Slave模型，Master是对应集群中的含有Master进程的节点，负责管理全部Worker节点，负责整个集群的正常运行；
+Slave是集群中含有Worker进程的节点，负责管理executor并与Master节点通信。Master作为整个集群的控制器，负责整个集群的正常运行；Worker相当于计算
+节点，接收主节点命令并进行状态汇报；Executor负责任务的执行；Client作为用户的客户端负责提交应用，Driver负责控制一个应用的执行。
+
+1、Spark运行架构
+    Spark集群部署后，需要在主节点和从节点分别启动Master进程和Worker进程，对整个集群进行控制。在一个Spark应用的执行过程中，Driver和Worker是
+两个重要角色。Driver程序是应用逻辑执行的起点，负责应用的解析、切分Stage并调度Task到Executor执行，包含DAGScheduler等重要对象；而多个Worker
+用来管理计算节点和创建Executor并行处理任务。在执行阶段，Driver会将Task和Task所依赖的file和jar序列化后传递给对应的Worker机器，同时Executor
+对相应数据分区的任务进行处理。
+    每个Application获取专属的executor进程，该进程在Application期间一直驻留，并以多线程方式运行tasks。这种Application隔离机制有其优势，
+从调度角度看(每个Driver调度它自己的任务)，从运行角度看(来自不同Application的Task运行在不同的JVM)。这也意味着Spark Application不能跨应用
+程序共享数据，除非将数据写入到外部存储系统。
+
+2、Spark运行流程(见图)
+    (1)构建Spark Application的运行环境（启动SparkContext），SparkContext向资源管理器（可以是Standalone、Mesos或YARN）注册并申请运行
+Executor资源。
+    (2)资源管理器分配Executor资源并启动StandaloneExecutorBackend，Executor运行情况将随着心跳发送到资源管理器上。
+    (3)Spark在进行transformation计算的时候，不会触发Job，只有执行action操作的时候，才会触发Job。在Driver中SparkContext根据RDD之间的
+依赖关系创建出DAG有向无环图，DAG Scheduler负责解析这个图，解析时是以Shuffle为边界，反向解析，构建stage。将多个任务根据依赖关系划分为不同的
+Stage，将每个Stage的TaskSet提交给Task Scheduler，Executor向SparkContext申请Task，Task Scheduler将Task发放给Executor，任务会在
+Executor进程的多个Task线程上执行，完成Task任务后将结果信息提交到ExecutorBackend中，它会将信息提交给Task Scheduler。
+    (4)Task Scheduler接到消息后通知TaskSetManager，移除该Task任务，开始执行下一个任务。TaskScheduler同时会将信息同步到TaskSetManager
+中一份，全部任务执行完毕后TaskSetManager将结果反馈给DAG Scheduler，如果属于ResultTask会交给JobListener。否则全部任务执行完毕后写入数据，
+释放所有资源。
+
+
 
 
 

@@ -18,4 +18,5 @@ git push [<远程服务器名>][<远程分支名>] ：向远程仓库推送代�
 
 
 
-idea提交代码至github时：新建的文件显示红色，建完有修改的文件显示蓝色，Git add之后显示绿色，commit之后显示白色，push之后github上会显示修改
+idea提交代码至github时：新建的文件显示红色，建完有修改的文件显示蓝色，Git add之后显示绿色，commit之后显示白色，push之后
+github上会显示修改

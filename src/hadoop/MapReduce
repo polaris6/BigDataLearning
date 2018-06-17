@@ -1,52 +1,53 @@
-   MapReduce是一种计算模型，该模型可将大型数据处理任务分解成很多单个的、可以在服务器集群中并行执行的任务。这些任务的计算结果可以合并在一起来计算
-最终的结果。
-   Map:在MapReduce计算框架中只有两个算子map和reduce，不存在flatmap的概念。所以MapReduce中的map操作会将输入的键值对转换成零到多个键值对
-输出（并不是一对一的概念）。
-   Reduce:在MapReduce计算框架中，某个键的所有键值对都会被分发到同一个reduce操作中，即这个键和这个键所对应的所有值都会被传递给同一个Reducer。
-reduce过程的目的是将值的集合转换成一个值（例如求和），或者转换成另一个集合，这个Reducer最终会产生一个键值对。
+    MapReduce是一种计算模型，该模型可将大型数据处理任务分解成很多单个的、可以在服务器集群中并行执行的任务。这些任务的
+计算结果可以合并在一起来计算最终的结果。
+    Map:在MapReduce计算框架中只有两个算子map和reduce，不存在flatmap的概念。所以MapReduce中的map操作会将输入的键值对转换
+成零到多个键值对输出（并不是一对一的概念）。
+    Reduce:在MapReduce计算框架中，某个键的所有键值对都会被分发到同一个reduce操作中，即这个键和这个键所对应的所有值都会
+被传递给同一个Reducer。reduce过程的目的是将值的集合转换成一个值（例如求和），或者转换成另一个集合，这个Reducer最终会产生
+一个键值对。
 
-   Input    Mappers    Sort,Shuffle    Reducers    Output
-   Mapper后面会进行Sort（排序）和Shuffle（重新分发）过程，Hadoop会按照键来对键值对进行排序，然后"重新洗牌"，将所有具有相同键的键值对分发到
-同一个Reducer中。
+    Input    Mappers    Sort,Shuffle    Reducers    Output
+    Mapper后面会进行Sort（排序）和Shuffle（重新分发）过程，Hadoop会按照键来对键值对进行排序，然后"重新洗牌"，将所有具有
+相同键的键值对分发到同一个Reducer中。
 
-   伪代码：
-   map(String key, String value):    
-      // key: document name    
-      // value: document contents    
-      for each word w in value:        
-         EmitIntermediate(w, “1″); 
+    伪代码：
+    map(String key, String value):    
+       // key: document name    
+       // value: document contents    
+       for each word w in value:        
+          EmitIntermediate(w, “1″); 
 
-   reduce(String key, Iterator values):    
-      // key: a word    
-      // values: a list of counts    
-      int result = 0;    
-      for each v in values:        
-         result += ParseInt(v);    
-      Emit(AsString(result));
+    reduce(String key, Iterator values):    
+       // key: a word    
+       // values: a list of counts    
+       int result = 0;    
+       for each v in values:        
+          result += ParseInt(v);    
+       Emit(AsString(result));
 
 
 Map操作输入输出是一对一还是一对多的问题：
-   要分具体的场景，Hadoop中的MapReduce只有map和reduce两个算子，没有flatmap的概念，所以这里map的输出是零到多个。Spark和kafka streams中
-的map是一对一的，flatmap是一对多的。
+    要分具体的场景，Hadoop中的MapReduce只有map和reduce两个算子，没有flatmap的概念，所以这里map的输出是零到多个。Spark和
+kafka streams中的map是一对一的，flatmap是一对多的。
 
 Spark:
 1、RDD Operations:
-   map:map is a transformation that passes each dataset element through a function and returns a new RDD
+    map:map is a transformation that passes each dataset element through a function and returns a new RDD
 representing the results.
-   flatmap:Similar to map, but each input item can be mapped to 0 or more output items (so func should return a Seq
+    flatmap:Similar to map, but each input item can be mapped to 0 or more output items (so func should return a Seq
 rather than a single item).
 
 2、DStream operation:
-   map:one-to-one transformation.
-   flatmap:flatMap is a one-to-many DStream operation that creates a new DStream by generating multiple new records
+    map:one-to-one transformation.
+    flatmap:flatMap is a one-to-many DStream operation that creates a new DStream by generating multiple new records
 from each record in the source DStream.
 
 
 kafka streams：
-   Map:Takes one record and produces one record. You can modify the record key and value, including their types.
-   Map(values only):Takes one record and produces one record, while retaining the key of the original record.
+    Map:Takes one record and produces one record. You can modify the record key and value, including their types.
+    Map(values only):Takes one record and produces one record, while retaining the key of the original record.
 You can modify the record value and the value type.
-   FlatMap:Takes one record and produces zero, one, or more records. You can modify the record keys and values,
+    FlatMap:Takes one record and produces zero, one, or more records. You can modify the record keys and values,
 including their types.
-   FlatMap(values only):Takes one record and produces zero, one, or more records, while retaining the key of the
+    FlatMap(values only):Takes one record and produces zero, one, or more records, while retaining the key of the
 original record. You can modify the record values and the value type.

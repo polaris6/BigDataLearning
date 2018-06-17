@@ -2,42 +2,46 @@ Hadoop主要解决了两件事情：数据的可靠存储和数据的分析处�
 
 
 一、MapReduce简介：
-   MapReduce中作业(job)是客户端执行的单位：它包括输入数据、MapReduce程序和配置信息。Hadoop通过把作业分成若干个小任务(task)来工作，任务分为
-两种类型：map任务和reduce任务。
-   有两种类型的节点控制着作业执行过程：jobtracker和多个tasktracker。jobtracker通过调度任务在tasktracker上运行，来协调所有运行在系统上的
-作业。Tasktracker运行任务的同时，会把进度报告给jobtracker，jobtracker记录着每项任务的整体进展情况。如果其中一个任务失败，jobtracker可以重新
-调度任务到另一个tasktracker。Hadoop把输入数据划分成等长的小数据发送到MapReduce，称为输入分片(input split)或分片。Hadoop为每个分片(split)
-创建一个map任务，由它来运行用户自定义的map函数。
-   map任务把输出写入本地硬盘，而不是HDFS，为什么？因为map的输出作为中间输出，中间输出被reduce任务处理后产生最终的输出，一旦作业完成，map的输出
-就可以删除了，所以不必存储在HDFS中。如果该节点上运行的map任务在map输出给reduce任务处理之前崩溃，那么Hadoop将在另一个节点上重新运行map任务以
-再次创建map的输出。
-   reduce的输出因为是最终输出，通常存储在HDFS中。对于每个reduce输出的HDFS块，第一个副本存储在本地节点上，其他副本存储在其他机架节点中。
-   reduce任务的数目不是由输入的大小决定的，而是单独具体指定的。如果有多个reducer，map任务会对其输出进行分区，为每个reduce任务创建一个分区。
-每个partition包含许多键(及其关联的值)，但每个键的记录都在同一个partition中。分区可以通过自己写partitioner来控制，默认是hash。map和reduce
-任务之间的数据流要进行shuffle(洗牌)，因为每个reduce任务的输入都由许多map任务来提供。详见：MapReduce数据流图
+    MapReduce中作业(job)是客户端执行的单位：它包括输入数据、MapReduce程序和配置信息。Hadoop通过把作业分成若干个小任务
+(task)来工作，任务分为两种类型：map任务和reduce任务。
+    有两种类型的节点控制着作业执行过程：jobtracker和多个tasktracker。jobtracker通过调度任务在tasktracker上运行，来协调
+所有运行在系统上的作业。Tasktracker运行任务的同时，会把进度报告给jobtracker，jobtracker记录着每项任务的整体进展情况。
+如果其中一个任务失败，jobtracker可以重新调度任务到另一个tasktracker。Hadoop把输入数据划分成等长的小数据发送到MapReduce，
+称为输入分片(input split)或分片。Hadoop为每个分片(split)创建一个map任务，由它来运行用户自定义的map函数。
+    map任务把输出写入本地硬盘，而不是HDFS，为什么？因为map的输出作为中间输出，中间输出被reduce任务处理后产生最终的输出，
+一旦作业完成，map的输出就可以删除了，所以不必存储在HDFS中。如果该节点上运行的map任务在map输出给reduce任务处理之前崩溃，
+那么Hadoop将在另一个节点上重新运行map任务以再次创建map的输出。
+    reduce的输出因为是最终输出，通常存储在HDFS中。对于每个reduce输出的HDFS块，第一个副本存储在本地节点上，其他副本存储在
+其他机架节点中。
+    reduce任务的数目不是由输入的大小决定的，而是单独具体指定的。如果有多个reducer，map任务会对其输出进行分区，为每个
+reduce任务创建一个分区。每个partition包含许多键(及其关联的值)，但每个键的记录都在同一个partition中。分区可以通过自己写
+partitioner来控制，默认是hash。map和reduce任务之间的数据流要进行shuffle(洗牌)，因为每个reduce任务的输入都由许多map任务
+来提供。详见：MapReduce数据流图
 
 
 二、shuffle
-   Hadoop的核心思想是MapReduce，shuffle又是MapReduce的核心，shuffle的主要工作是从Map结束到Reduce开始之间的过程。MapReduce保证每个
-reducer的输入都已按键排序，可以将shuffle(洗牌)理解为系统执行排序的过程。shuffle阶段又分为Map端的shuffle和Reduce端的shuffle：shuffle图
+    Hadoop的核心思想是MapReduce，shuffle又是MapReduce的核心，shuffle的主要工作是从Map结束到Reduce开始之间的过程。
+MapReduce保证每个reducer的输入都已按键排序，可以将shuffle(洗牌)理解为系统执行排序的过程。shuffle阶段又分为Map端的
+shuffle和Reduce端的shuffle：详见shuffle图
 1、Map端的shuffle
-   Map端会处理输入数据并产生中间结果，这个中间结果会写到本地磁盘，在写入磁盘前Map的输出会先写到内存缓冲区，当写入的数据达到设定的阈值时，系统会
-启动一个线程将缓冲区的数据写到磁盘，这个过程叫spill。
-   在spill写入之前，会先进行两次排序，首先根据数据所属的partition进行排序(key的hash值对partition数取模，选定分区)，然后每个partition中的
-数据再按key来排序，Reduce阶段每个reducer会根据partition来读取自己对应的数据。
-   排序之后会先运行combiner(如果设置了的话)，combiner的本质也是一个reducer，目的是对将要写入磁盘上的文件先进行一次处理，这样写入磁盘的数据量
-就会减少。
-   最后将数据写入磁盘产生spill文件，spill文件保存在{mapred.local.dir}指定的目录中，map任务结束后就会被删除。每个map任务可能会产生多个spill
-文件，在每个map任务完成前，会通过多路归并算法将这些spill文件归并成一个文件。至此，Map端的shuffle就结束了。
+    Map端会处理输入数据并产生中间结果，这个中间结果会写到本地磁盘，在写入磁盘前Map的输出会先写到内存缓冲区，当写入的
+数据达到设定的阈值时，系统会启动一个线程将缓冲区的数据写到磁盘，这个过程叫spill。
+    在spill写入之前，会先进行两次排序，首先根据数据所属的partition进行排序(key的hash值对partition数取模，选定分区)，
+然后每个partition中的数据再按key来排序，Reduce阶段每个reducer会根据partition来读取自己对应的数据。
+    排序之后会先运行combiner(如果设置了的话)，combiner的本质也是一个reducer，目的是对将要写入磁盘上的文件先进行一次处理，
+这样写入磁盘的数据量就会减少。
+    最后将数据写入磁盘产生spill文件，spill文件保存在{mapred.local.dir}指定的目录中，map任务结束后就会被删除。每个map任务
+可能会产生多个spill文件，在每个map任务完成前，会通过多路归并算法将这些spill文件归并成一个文件。至此，Map端的shuffle就
+结束了。
 
 2、Reduce端的shuffle
-   Reduce端的shuffle主要包括三个阶段：copy、sort(merge)和reduce
-   首先将Map端产生的输出文件拷贝到Reduce端，Map端进行partition的时候，实际上就指定了每个reducer要处理的数据(partition对应了reducer)，
-所以reducer在拷贝数据的时候只需要拷贝与自己对应的partition中的数据，每个reducer会对应一个或多个partition。
-   接下来是sort阶段，也就是merge阶段，这个阶段的主要工作是执行了归并排序。从Map端拷贝到Reduce端的数据都是有序的，很适合归并排序，最终会在
-Reduce端生成一个较大的文件作为reduce的输入。
-   最后是reduce阶段，这个过程产生最终的输出结果，并将其写到HDFS。
+    Reduce端的shuffle主要包括三个阶段：copy、sort(merge)和reduce
+    首先将Map端产生的输出文件拷贝到Reduce端，Map端进行partition的时候，实际上就指定了每个reducer要处理的数据(partition对
+应了reducer)，所以reducer在拷贝数据的时候只需要拷贝与自己对应的partition中的数据，每个reducer会对应一个或多个partition。
+    接下来是sort阶段，也就是merge阶段，这个阶段的主要工作是执行了归并排序。从Map端拷贝到Reduce端的数据都是有序的，很适合
+归并排序，最终会在Reduce端生成一个较大的文件作为reduce的输入。
+    最后是reduce阶段，这个过程产生最终的输出结果，并将其写到HDFS。
 
 
 三、HDFS：
-   HDFS是Hadoop的分布式文件系统(Hadoop Distributed Filesystem)
+    HDFS是Hadoop的分布式文件系统(Hadoop Distributed Filesystem)

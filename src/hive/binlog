@@ -1,4 +1,5 @@
-binlog：二进制文件，记录对数据库内容的修改，由对内容修改的"事件"的文件组成，事件分为三种类型：insert、update、delete 增删改
+binlog：二进制文件，记录对数据库内容的修改，由对内容修改的"事件"的文件组成，事件分为三种类型：insert、update、delete
+增删改
 作用：用于用户数据库备份和数据恢复
 Canal API完成对binlog的解析后，编码成json格式的字符串
 

@@ -18,8 +18,6 @@ Hadoop主要解决了两件事情：数据的可靠存储和数据的分析处�
 
 
 二、shuffle
-   在MapReduce框架中，shuffle是连接Map和Reduce之间的桥梁，Map的输出要用到Reduce中必须经过shuffle这个环节。对于大数据计算框架而言，shuffle
-阶段的效率是决定性能好坏的关键因素之一。
    Hadoop的核心思想是MapReduce，shuffle又是MapReduce的核心，shuffle的主要工作是从Map结束到Reduce开始之间的过程。MapReduce保证每个
 reducer的输入都已按键排序，可以将shuffle(洗牌)理解为系统执行排序的过程。shuffle阶段又分为Map端的shuffle和Reduce端的shuffle：shuffle图
 1、Map端的shuffle

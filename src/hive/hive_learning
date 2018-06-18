@@ -1,7 +1,8 @@
 一：Hive介绍
 1、设计初衷：
-我们学习hadoop的时候，为了让那些不太会java语言但是对SQL很熟悉的工程师能够操作基本的MapReduce计算过程，Hive被设计出来了。Hive就好比是
-hadoop在执行MR(MapReduce)程序的一个操作系统，我们可以用简单的SQL语句去代替复杂的MR程序，因为Hive可以将我们的SQL语句转化为MR程序然后去执行。
+我们学习hadoop的时候，为了让那些不太会java语言但是对SQL很熟悉的工程师能够操作基本的MapReduce计算过程，Hive被设计出来了。
+Hive就好比是hadoop在执行MR(MapReduce)程序的一个操作系统，我们可以用简单的SQL语句去代替复杂的MR程序，因为Hive可以将我们的
+SQL语句转化为MR程序然后去执行。
 Hive的语法和SQL的语法很多地方是相同的，所以说它就是为熟连使用SQL的工程师设计的。
 2、介绍：
 Hive是分布式数据仓库，Hive管理HDFS中存储的数据，并提供基于SQL的查询语言（由运行时引擎翻译成MapReduce作业）用以查询数据。
@@ -70,8 +71,8 @@ Hive最适合于数据仓库程序，对于数据仓库程序不需要实时响�
 
 
 
-数据库字段如果被设置为允许为空,在插入数据时不指定那个字段的值, 那么其值肯定为null。数据库字段的运算中，null与任何值运算的结果都是null，比如
-100+null结果为null，这点要切记。
+数据库字段如果被设置为允许为空,在插入数据时不指定那个字段的值, 那么其值肯定为null。数据库字段的运算中，null与任何值运算
+的结果都是null，比如100+null结果为null，这点要切记。
 解决办法：
 1、可以使用isnull函数指定在其值为null情况下的取值:
    update tableName set num = isnull(num, 0) + 接收到的数 where id=XXX

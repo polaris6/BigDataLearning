@@ -8,9 +8,9 @@
 Block Manager(物理存储管理器)中的物理数据块Block(保存在内存或硬盘上)。RDD是spark的核心数据结构，通过RDD的依赖关系形成spark的调度顺序，
 spark应用程序本质是一组对RDD的操作。RDD中保存了逻辑分区与物理数据块之间的映射关系，以及父辈RDD的依赖转换关系。
     RDD的两种创建方式：从文件系统输入(如HDFS)创建 和 从已存在的RDD转换得到新的RDD
-    RDD的两种操作算子：Transformation 和 Action  Transformation类型的算子不是立刻执行，而是延迟执行，也就是说从一个RDD变换为另一个RDD的
-操作需要等到Action操作触发时，才会真正执行。Action类型的算子会触发spark提交作业，并将数据输出到spark系统。无论执行了多少次Transformation操作，
-RDD都不会真正执行运算，只有当Action操作被执行时，运算才会触发。
+    RDD的两种操作算子：Transformation和Action  Transformation类型的算子不是立刻执行，而是延迟执行，也就是说从一个RDD变换为另一个RDD的操作
+需要等到Action操作触发时，才会真正执行。Action类型的算子会触发job的提交，其他的操作只是生成对应的RDD关系链，无论执行了多少次Transformation
+操作，RDD都不会真正执行运算，只有当Action操作被执行时，运算才会触发。
     RDD可以相互依赖，如果RDD的每个分区最多只能被一个Child RDD的一个分区使用，称为窄依赖(narrow dependency)；若多个Child RDD分区都可以使用，
 则称为宽依赖(wide dependency)。不同的操作会产生不同的依赖，例如map会产生窄依赖，join会产生宽依赖(join会分为两种，一种是join with inputs
 co-partitioned，输入和输出被分到同等的分区(输入端某个分区的数据在输出端对应分区里必须有)，这种是窄依赖；另一种join with inputs not
@@ -27,6 +27,9 @@ RDD的分区特性与并行计算能力(RDD定义了parallerize函数)，使得s
 算子。
     Transformation：map、filter、flatMap、groupByKey、reduceBykey、union、join、mapValues、sort、partitionBy、sample
     Action：count、reduce、aggregate、collect、lookup、saveAsTextFile、foreach
+    Transformation返回值还是一个RDD，它使用了链式调用的设计模式，对一个RDD进行计算后，变换成另一个RDD，然后这个RDD又可以进行另外一次转换，这个
+过程是分布式的。
+    Action返回值不是一个RDD，它要么是一个scala的普通集合，要么是一个值，要么为空。
 
 
 二：Spark机制原理
@@ -54,8 +57,16 @@ Executor资源。
 Stage，将每个Stage的TaskSet提交给Task Scheduler，Executor向SparkContext申请Task，Task Scheduler将Task发放给Executor，任务会在
 Executor进程的多个Task线程上执行，完成Task任务后将结果信息提交到ExecutorBackend中，它会将信息提交给Task Scheduler。
     (4)Task Scheduler接到消息后通知TaskSetManager，移除该Task任务，开始执行下一个任务。TaskScheduler同时会将信息同步到TaskSetManager
-中一份，全部任务执行完毕后TaskSetManager将结果反馈给DAG Scheduler，如果属于ResultTask会交给JobListener。否则全部任务执行完毕后写入数据，
-释放所有资源。
+(在TaskScheduler内部实现中创建了TaskSetManager实例来管理任务集TaskSet的生命周期)中一份，全部任务执行完毕后TaskSetManager将结果反馈给
+DAG Scheduler，如果属于ResultTask会交给JobListener。否则全部任务执行完毕后写入数据，释放所有资源。
+
+3、Spark容错机制及依赖
+    (1)lineage（血统）机制：每个RDD除了包含分区信息外，还包含它从父辈RDD变换过来的步骤，以及如何重建某一块数据的信息，RDD的这种容错机制又称"血统"
+(lineage)容错。RDD在lineage容错方面采用两种依赖来保证容错方面的性能：宽依赖和窄依赖。
+    (2)checkpoint（检查点）机制：checkpoint的本质是将RDD写入Disk来作为检查点，这种做法是为了通过lineage血统做容错的辅助，lineage过长会造成
+容错成本过高，这样就不如在中间阶段做检查点容错，如果之后有节点出现问题而丢失分区，从做检查点的RDD开始重做lineage，就会减少开销。
+
+
 
 
 

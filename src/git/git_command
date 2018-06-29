@@ -12,7 +12,8 @@ git commit -m "提交说明" ：暂存区提交文件至本地仓库，-m后面�
 git push [<远程服务器名>][<远程分支名>] ：向远程仓库推送代码
 例：git push -u origin master 推送到origin服务器的master分支上
 
-
+git log：查看提交历史
+git log -p -2：查看最近两次提交的内容差异，-p选项展开显示每次提交的内容差异，-2显示最近两次的更新
 
 
 

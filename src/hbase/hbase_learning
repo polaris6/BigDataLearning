@@ -25,7 +25,7 @@ HBase会自动添加一个timestamp，timestamp和服务器时间保持一致。
 region分配给不同的RegionServer，由RegionSever来提供Region的读写服务和相关的管理工作。
     Region按大小分割，每个表一开始只有一个region，随着数据不断插入表，region不断增大，当增大到一个阀值的时候(region的某个列族
 达到一个阈值(默认256M))，region就会等分会两个新的region。当table中的行不断增多，就会有越来越多的region。
-    Region图模拟了一个HBase的表是如何拆分成region，以及分配到不同的RegionServer中去。上面是1个Userinfo表，里面有7条记录，
+    Region.png图 模拟了一个HBase的表是如何拆分成region，以及分配到不同的RegionServer中去。上面是1个Userinfo表，里面有7条记录，
 其中RowKey为0001到0002的记录被分配到了Region1上，RowKey为0003到0004的记录被分配到了Region2上，而RowKey为0005、0006和
 0007的记录被分配到了Region3上。region1和region2被master分配给了RegionServer1(RS1)，Region3被master配分给了RegionServer2(RS2)。
 
@@ -84,7 +84,10 @@ anchor:my.look.ca值的请求也不会返回任何值。但是如果没有提供
      95002                              column=Sage:, timestamp=1531313668854, value=22
      95002                              column=Sname:, timestamp=1531313660182, value=kobe
 
+5、删除表：
+    删除表有两步，第一步先让该表不可用 disable 'student'，第二步删除表 drop 'student'
 
+6、查询表历史数据：
 
 
 

@@ -1,27 +1,25 @@
-HBase：
+一、基本概念：
+1、HBase：
     Hadoop Database的简称，HBase是分布式、面向列、用于海量数据的高速存储和读取的NoSQL数据库(准确的说是面向列族)，HDFS为HBase提供可靠的
 底层数据存储服务，MapReduce为HBase提供高性能的计算能力，Zookeeper为HBase提供稳定服务和Failover机制。
 
-
-Column Family(列族)：
+2、Column Family(列族)：
     HBase采用的是列式存储，根据列族来存储数据。列族是由一个一个的列组成，列族下面可以包含任意多的列，实现灵活的数据存取。
 列名由其列族前缀和标识符(此列名)组成，列族的所有列成员具有​​相同的前缀，例如courses:history和courses:math都是courses列族的成员，
 冒号起分隔作用。
     HBase的列族不是越多越好，官方推荐的是列族最好小于或者等于3，我们使用的场景一般是1个列族。HBase表创建的时候就必须指定列族。
 
-
-RowKey(行键)：
-    RowKey的概念和mysql中的主键是完全一样的，HBase使用RowKey来唯一的区分某一行的数据，行是按RowKey的字典序排序的。
+3、RowKey(行键)：
+    RowKey的概念和mysql中的主键是完全一样的，RowKey行键是HBase中检索记录所使用的键，HBase使用RowKey来唯一的区分某一行的数据，
+行是按RowKey的字典序排序的。
     HBase中的行是逻辑上的行，物理上行是按列族(Column family)分别存取的。
 
-
-TimeStamp(时间戳)：
+4、TimeStamp(时间戳)：
     在HBase中使用不同的timestamp来标识相同RowKey行对应的不通版本的数据。在写入数据的时候，如果用户没有指定对应的timestamp，
 HBase会自动添加一个timestamp，timestamp和服务器时间保持一致。在HBase中，相同RowKey的数据按照timestamp倒序排列，默认查询的
 是最新的版本，可以通过指定timestamp的值来读取旧版本的数据。
 
-
-Region：
+5、Region：
     Region的概念类似于partition，HBase中的每张表都在行的方向上被分割成多个子表(Region)，每个Region负责一部分RowKey范围的
 数据的读写和维护。Region是HBase中分布式存储和负载均衡的最小单元，Region包含了对应的起始行到结束行的所有信息。master将对应的
 region分配给不同的RegionServer，由RegionSever来提供Region的读写服务和相关的管理工作。
@@ -31,17 +29,14 @@ region分配给不同的RegionServer，由RegionSever来提供Region的读写服
 其中RowKey为0001到0002的记录被分配到了Region1上，RowKey为0003到0004的记录被分配到了Region2上，而RowKey为0005、0006和
 0007的记录被分配到了Region3上。region1和region2被master分配给了RegionServer1(RS1)，Region3被master配分给了RegionServer2(RS2)。
 
-
-Store：
+6、Store：
     每个Region由一个或多个Store组成，至少是一个Store，HBase会把一起访问的数据放在一个Store里面，即为每个ColumnFamily建一个Store，
 有几个ColumnFamily，也就有几个Store。一个Store由一个memStore和0或者多个StoreFile组成，Store的大小被HBase用来判断是否需要切分Region。
 
-
-HLog：
+7、HLog：
     HLog记录数据的所有变更，可以用来恢复文件，一旦region server 宕机，就可以从log中进行恢复。
 
-
-HBase概念视图：
+8、HBase概念视图：
     如图概念视图，来自于HBase官网的webtable表，其中包含两行（com.cnn.www和com.example.www）以及名为contents、anchor和people的
 三个列族。
     对于第一行（com.cnn.www），列族anchor包含两列（anchor:cnnsi.com，anchor:my.look.ca），列族contents包含一列（contents:html）。
@@ -49,8 +44,7 @@ HBase概念视图：
 的标识符每个包含与该行所表示的站点链接的外部站点以及它在其链接的锚点（anchor）中使用的文本。people列族代表与该网站相关的人员。
     此表中显示为空的单元格在HBase中不占用空间，这正是使HBase"稀疏"的原因。对于为空(null)的列，并不占用存储空间，因此表可以设计的非常稀疏。
 
-
-HBase物理视图：
+9、HBase物理视图：
     在HBase概念视图中，表格被视为一组稀疏的行的集合，但它们是按列族进行物理存储的。可以随时将新的列（column_family：column_qualifier）
 添加到现有的列族。
     HBase概念视图中显示的空单元根本不存储，因此对时间戳为T8的contents:html列值的请求将不返回任何值。同样，在时间戳为T9中一个
@@ -58,16 +52,37 @@ anchor:my.look.ca值的请求也不会返回任何值。但是如果没有提供
 中所有列的值的请求将是：时间戳T6中的contents:html，时间戳T9中anchor:cnnsi.com的值，时间戳T8中anchor:my.look.ca的值。
 
 
-
-
-建表：
+二、基本操作：
+1、建表：
     HBase中表是在 schema 定义时被预先声明的，建表时必须指定表名和列族名
     create ‘<table name>’,’<column family>’
-    例如：create 'student','Sname','Ssex','Sage','Sdept','course'
+    例如：create 'student','Sname','Ssex','Sage','Sdept','course'，创建表student，指定五个列族
 
+2、添加数据：
+    在添加数据时，HBase会自动为添加的数据添加一个时间戳，故在需要修改数据时，只需直接添加数据，HBase即会生成一个新的版本，从而完成“改”操作，
+旧的版本依旧保留，系统会定时回收垃圾数据，只留下最新的几个版本，保存的版本数可以在创建表的时候指定。
+    HBase表中会有一个系统默认的属性作为行键，无需自行创建，默认为put命令操作中表名后第一个数据。HBase中用put命令添加数据，注意：一次只能为
+一个表的一行数据的一个列，也就是一个单元格添加一个数据，所以直接用shell命令插入数据效率很低，在实际应用中，一般都是利用编程操作数据。
+    当运行命令：put ‘student’,’95001’,’Sname’,’Tom’时，即为student表添加了学号为95001，名字为Tom的一行数据，其行键为95001。
+    命令：put 'student','95001','course:math','80'，即为95001行下的course列族的math列添加了一个数据。
 
+3、删除数据：
+    在HBase中用delete和deleteall命令进行删除数据操作，它们的区别是：delete用于删除一个数据，是put的反向操作；deleteall用于删除一行数据。
+    例如：delete 'student','95001','Sname'     deleteall 'student','95001'
 
+4、查看数据：
+    HBase中有两个用于查看数据的命令：get命令用于查看表的某一个单元格数据；scan命令用于查看某个表的全部数据
+    命令：get 'student','95001' 查看数据：
+    COLUMN                              CELL
+     Sname:                             timestamp=1531313606185, value=Tom
+     course:math                        timestamp=1531313613747, value=80
 
+    命令：scan 'student' 查看数据：
+    ROW                                 COLUMN+CELL
+     95001                              column=Sname:, timestamp=1531313606185, value=Tom
+     95001                              column=course:math, timestamp=1531313613747, value=80
+     95002                              column=Sage:, timestamp=1531313668854, value=22
+     95002                              column=Sname:, timestamp=1531313660182, value=kobe
 
 
 

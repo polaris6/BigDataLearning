@@ -4,6 +4,7 @@
       <w>bykey</w>
       <w>dataset</w>
       <w>dbproperties</w>
+      <w>deleteall</w>
       <w>flatmap</w>
       <w>groupby</w>
       <w>hdfs</w>

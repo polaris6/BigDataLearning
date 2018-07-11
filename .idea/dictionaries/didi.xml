@@ -13,6 +13,9 @@
       <w>mesos</w>
       <w>metastore</w>
       <w>parallerize</w>
+      <w>sdept</w>
+      <w>sname</w>
+      <w>ssex</w>
       <w>tasktracker</w>
       <w>tblproperties</w>
       <w>unixtime</w>

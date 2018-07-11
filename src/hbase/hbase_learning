@@ -5,7 +5,9 @@ HBase：
 
 Column Family(列族)：
     HBase采用的是列式存储，根据列族来存储数据。列族是由一个一个的列组成，列族下面可以包含任意多的列，实现灵活的数据存取。
-HBase的列族不是越多越好，官方推荐的是列族最好小于或者等于3，我们使用的场景一般是1个列族。HBase表创建的时候就必须指定列族。
+列名由其列族前缀和标识符(此列名)组成，列族的所有列成员具有​​相同的前缀，例如courses:history和courses:math都是courses列族的成员，
+冒号起分隔作用。
+    HBase的列族不是越多越好，官方推荐的是列族最好小于或者等于3，我们使用的场景一般是1个列族。HBase表创建的时候就必须指定列族。
 
 
 RowKey(行键)：
@@ -43,27 +45,17 @@ HBase概念视图：
     如图概念视图，来自于HBase官网的webtable表，其中包含两行（com.cnn.www和com.example.www）以及名为contents、anchor和people的
 三个列族。
     对于第一行（com.cnn.www），列族anchor包含两列（anchor:cnnsi.com，anchor:my.look.ca），列族contents包含一列（contents:html）。
-具有行键com.cnn.www的行有5个版本，具有行键com.example.www的行有一个版本。contents:html列限定符包含给定网站的整个HTML，锚（anchor）列族
-的限定符每个包含与该行所表示的站点链接的外部站点以及它在其链接的锚点（anchor）中使用的文本。people列族代表与该网站相关的人员。
-    列名称：列名由其列族前缀和限定符组成。例如contents:html列由列族contents和html限定符组成，冒号起分隔作用。
+具有行键com.cnn.www的行有5个版本，具有行键com.example.www的行有一个版本。contents:html列标识符包含给定网站的整个HTML，锚（anchor）列族
+的标识符每个包含与该行所表示的站点链接的外部站点以及它在其链接的锚点（anchor）中使用的文本。people列族代表与该网站相关的人员。
     此表中显示为空的单元格在HBase中不占用空间，这正是使HBase"稀疏"的原因。对于为空(null)的列，并不占用存储空间，因此表可以设计的非常稀疏。
 
 
 HBase物理视图：
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    在HBase概念视图中，表格被视为一组稀疏的行的集合，但它们是按列族进行物理存储的。可以随时将新的列（column_family：column_qualifier）
+添加到现有的列族。
+    HBase概念视图中显示的空单元根本不存储，因此对时间戳为T8的contents:html列值的请求将不返回任何值。同样，在时间戳为T9中一个
+anchor:my.look.ca值的请求也不会返回任何值。但是如果没有提供时间戳，则会返回此列最新的列值。因此，如果没有指定时间戳，则对行com.cnn.www
+中所有列的值的请求将是：时间戳T6中的contents:html，时间戳T9中anchor:cnnsi.com的值，时间戳T8中anchor:my.look.ca的值。
 
 
 
@@ -71,6 +63,23 @@ HBase物理视图：
 建表：
     HBase中表是在 schema 定义时被预先声明的，建表时必须指定表名和列族名
     create ‘<table name>’,’<column family>’
+    例如：create 'student','Sname','Ssex','Sage','Sdept','course'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

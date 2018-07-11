@@ -19,7 +19,10 @@
 HBase会自动添加一个timestamp，timestamp和服务器时间保持一致。在HBase中，相同RowKey的数据按照timestamp倒序排列，默认查询的
 是最新的版本，可以通过指定timestamp的值来读取旧版本的数据。
 
-5、Region：
+5、Cell：
+    由{row key, column( =<family> + <label>), version} 唯一确定的单元，version通过timestamp来索引
+
+6、Region：
     Region的概念类似于partition，HBase中的每张表都在行的方向上被分割成多个子表(Region)，每个Region负责一部分RowKey范围的
 数据的读写和维护。Region是HBase中分布式存储和负载均衡的最小单元，Region包含了对应的起始行到结束行的所有信息。master将对应的
 region分配给不同的RegionServer，由RegionSever来提供Region的读写服务和相关的管理工作。
@@ -29,14 +32,14 @@ region分配给不同的RegionServer，由RegionSever来提供Region的读写服
 其中RowKey为0001到0002的记录被分配到了Region1上，RowKey为0003到0004的记录被分配到了Region2上，而RowKey为0005、0006和
 0007的记录被分配到了Region3上。region1和region2被master分配给了RegionServer1(RS1)，Region3被master配分给了RegionServer2(RS2)。
 
-6、Store：
+7、Store：
     每个Region由一个或多个Store组成，至少是一个Store，HBase会把一起访问的数据放在一个Store里面，即为每个ColumnFamily建一个Store，
 有几个ColumnFamily，也就有几个Store。一个Store由一个memStore和0或者多个StoreFile组成，Store的大小被HBase用来判断是否需要切分Region。
 
-7、HLog：
+8、HLog：
     HLog记录数据的所有变更，可以用来恢复文件，一旦region server 宕机，就可以从log中进行恢复。
 
-8、HBase概念视图：
+9、HBase概念视图：
     如图概念视图，来自于HBase官网的webtable表，其中包含两行（com.cnn.www和com.example.www）以及名为contents、anchor和people的
 三个列族。
     对于第一行（com.cnn.www），列族anchor包含两列（anchor:cnnsi.com，anchor:my.look.ca），列族contents包含一列（contents:html）。
@@ -44,7 +47,7 @@ region分配给不同的RegionServer，由RegionSever来提供Region的读写服
 的标识符每个包含与该行所表示的站点链接的外部站点以及它在其链接的锚点（anchor）中使用的文本。people列族代表与该网站相关的人员。
     此表中显示为空的单元格在HBase中不占用空间，这正是使HBase"稀疏"的原因。对于为空(null)的列，并不占用存储空间，因此表可以设计的非常稀疏。
 
-9、HBase物理视图：
+10、HBase物理视图：
     在HBase概念视图中，表格被视为一组稀疏的行的集合，但它们是按列族进行物理存储的。可以随时将新的列（column_family：column_qualifier）
 添加到现有的列族。
     HBase概念视图中显示的空单元根本不存储，因此对时间戳为T8的contents:html列值的请求将不返回任何值。同样，在时间戳为T9中一个
@@ -88,6 +91,26 @@ anchor:my.look.ca值的请求也不会返回任何值。但是如果没有提供
     删除表有两步，第一步先让该表不可用 disable 'student'，第二步删除表 drop 'student'
 
 6、查询表历史数据：
+    查询表的历史版本需要两步
+    (1)、在创建表的时候，指定保存的版本数（假设指定为5）
+    create 'teacher',{NAME=>'username',VERSIONS=>5}
+    (2)、插入数据然后更新数据，使其产生历史版本数据，注意：这里插入数据和更新数据都是用put命令
+    put 'teacher','91001','username','Mary'
+    put 'teacher','91001','username','Mary1'
+    put 'teacher','91001','username','Mary2'
+    put 'teacher','91001','username','Mary3'
+    put 'teacher','91001','username','Mary4'
+    put 'teacher','91001','username','Mary5'
+    这两步操作完后查询数据，指定查询的历史版本数(这里取5)，会查询出最新(5版)的数据，从'Mary5'到'Mary1'，版本通过时间戳来索引
+    get 'teacher','91001',{COLUMN=>'username',VERSIONS=>5}
+    COLUMN                               CELL
+     username:                           timestamp=1531319459962, value=Mary5
+     username:                           timestamp=1531319425006, value=Mary4
+     username:                           timestamp=1531319422866, value=Mary3
+     username:                           timestamp=1531319420754, value=Mary2
+     username:                           timestamp=1531319417505, value=Mary1
+
+
 
 
 

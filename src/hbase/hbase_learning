@@ -4,14 +4,14 @@
 底层数据存储服务，MapReduce为HBase提供高性能的计算能力，Zookeeper为HBase提供稳定服务和Failover机制。
 
 2、Column Family(列族)：
-    HBase采用的是列式存储，根据列族来存储数据。列族是由一个一个的列组成，列族下面可以包含任意多的列，实现灵活的数据存取。
-列名由其列族前缀和标识符(此列名)组成，列族的所有列成员具有​​相同的前缀，例如courses:history和courses:math都是courses列族的成员，
-冒号起分隔作用。
+    HBase采用的是列式存储，根据列族来存储数据。列族是由一个一个的列组成，列族下面可以包含任意多的列，实现灵活的数据存取。列族支持动态扩展，
+无需预先定义列的名称和数量，列名由其列族前缀和标识符(此列名)组成，列族的所有列成员具有​​相同的前缀，例如courses:history和courses:math都是
+courses列族的成员，冒号起分隔作用。
     HBase的列族不是越多越好，官方推荐的是列族最好小于或者等于3，我们使用的场景一般是1个列族。HBase表创建的时候就必须指定列族。
 
 3、RowKey(行键)：
     RowKey的概念和mysql中的主键是完全一样的，RowKey行键是HBase中检索记录所使用的键，HBase使用RowKey来唯一的区分某一行的数据，
-行是按RowKey的字典序排序的。
+行是按RowKey的字典序升序排列的。
     HBase中的行是逻辑上的行，物理上行是按列族(Column family)分别存取的。
 
 4、TimeStamp(时间戳)：
@@ -20,12 +20,12 @@ HBase会自动添加一个timestamp，timestamp和服务器时间保持一致。
 是最新的版本，可以通过指定timestamp的值来读取旧版本的数据。
 
 5、Cell：
-    由{row key, column( =<family> + <label>), version} 唯一确定的单元，version通过timestamp来索引
+    由{row key, column, version} 唯一确定的单元，version通过timestamp来索引
 
 6、Region：
     Region的概念类似于partition，HBase中的每张表都在行的方向上被分割成多个子表(Region)，每个Region负责一部分RowKey范围的
-数据的读写和维护。Region是HBase中分布式存储和负载均衡的最小单元，Region包含了对应的起始行到结束行的所有信息。master将对应的
-region分配给不同的RegionServer，由RegionSever来提供Region的读写服务和相关的管理工作。
+数据的读写和维护。Region是HBase中分布式存储和负载均衡的最小单元，Region包含了对应的起始行到结束行的所有信息。master将不同的
+region分配给对应的RegionServer，由RegionSever来提供Region的读写服务和相关的管理工作。
     Region按大小分割，每个表一开始只有一个region，随着数据不断插入表，region不断增大，当增大到一个阀值的时候(region的某个列族
 达到一个阈值(默认256M))，region就会等分会两个新的region。当table中的行不断增多，就会有越来越多的region。
     Region.png图 模拟了一个HBase的表是如何拆分成region，以及分配到不同的RegionServer中去。上面是1个Userinfo表，里面有7条记录，

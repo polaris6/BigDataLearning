@@ -27,10 +27,11 @@ HBase会自动添加一个timestamp，timestamp和服务器时间保持一致。
 数据的读写和维护。Region是HBase中分布式存储和负载均衡的最小单元，Region包含了对应的起始行到结束行的所有信息。master将不同的
 region分配给对应的RegionServer，由RegionSever来提供Region的读写服务和相关的管理工作。
     Region按大小分割，每个表一开始只有一个region，随着数据不断插入表，region不断增大，当增大到一个阀值的时候(region的某个列族
-达到一个阈值(默认256M))，region就会等分会两个新的region。当table中的行不断增多，就会有越来越多的region。
+达到一个阈值(默认256M))，region就会等分为两个新的region。当table中的行不断增多，就会有越来越多的region。
     Region.png图 模拟了一个HBase的表是如何拆分成region，以及分配到不同的RegionServer中去。上面是1个Userinfo表，里面有7条记录，
 其中RowKey为0001到0002的记录被分配到了Region1上，RowKey为0003到0004的记录被分配到了Region2上，而RowKey为0005、0006和
 0007的记录被分配到了Region3上。region1和region2被master分配给了RegionServer1(RS1)，Region3被master配分给了RegionServer2(RS2)。
+只是模拟，实际情况并不会几条记录拆分到不通的Region上，而是到一定的数据量才会拆分。
 
 7、Store：
     每个Region由一个或多个Store组成，至少是一个Store，HBase会把一起访问的数据放在一个Store里面，即为每个ColumnFamily建一个Store，
@@ -63,7 +64,7 @@ anchor:my.look.ca值的请求也不会返回任何值。但是如果没有提供
 
 2、添加数据：
     在添加数据时，HBase会自动为添加的数据添加一个时间戳，故在需要修改数据时，只需直接添加数据，HBase即会生成一个新的版本，从而完成“改”操作，
-旧的版本依旧保留，系统会定时回收垃圾数据，只留下最新的几个版本，保存的版本数可以在创建表的时候指定。
+旧的版本依旧保留，系统会定时回收垃圾数据，只留下最新的几个版本，保存的版本数可以在创建表的时候指定。HBase中的alter命令用于修改表结构。
     HBase表中会有一个系统默认的属性作为行键，无需自行创建，默认为put命令操作中表名后第一个数据。HBase中用put命令添加数据，注意：一次只能为
 一个表的一行数据的一个列，也就是一个单元格添加一个数据，所以直接用shell命令插入数据效率很低，在实际应用中，一般都是利用编程操作数据。
     当运行命令：put ‘student’,’95001’,’Sname’,’Tom’时，即为student表添加了学号为95001，名字为Tom的一行数据，其行键为95001。

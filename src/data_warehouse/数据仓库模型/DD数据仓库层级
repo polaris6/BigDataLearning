@@ -1,18 +1,46 @@
-层级	       全拼	                     通用中文说明
-ods	       operational data store	       源数据层
+DD数据仓库层级划分：
+层级	       全拼	                        通用中文说明
+ods	       operational data store	       源数据层(不严谨，DD数仓内部这样叫，理解为直接与数据源关联的临时存放层，可以叫数据运营层)
 dwd	       data warehouse detail	       明细层
-dim	       dimension	                   维度层
 dwm	       data warehouse model	           汇总层
 dm	       data market	                   集市层
-app	       application	                   应用层
+app	       application	                   应用层(数据产品层)
+dim	       dimension	                   维度层
 
 
-
-DD应用：
+DD hive表数仓层级(命名不同，以上面的为准)：
     ETL层（ODS）
     统计计算层（DW|DWM）
     数据主题层（DM）
     明细数据层（DWD|DWV）
     应用层（APP）
     维度层（DIM）
+
+
+层级关系(拿专快车订单表order_base举例)：
+1、ods层(源数据层)：
+    数据源中的数据经过ETL(抽取、清洗、加载)之后，装入本层。这一层的数据不等于原始数据，要进行去噪、去重、提脏(过滤脏数据)、业务提取、
+单位统一等多项工作。
+    例如：从mysql拿binlog数据，用json解析函数解析完不经过其他处理后放到gulfstream_ods.ods_binlog_d_order_base_increment
+(订单基础信息表)里，从increment表取数据过滤掉标记删除的数据后放到gulfstream_ods.ods_binlog_d_order_base(订单基础信息表)里。
+
+2、dwd层(明细层)：
+    对数据进行清洗、转换、聚合(join)，这层不做汇总操作。例如：从gulfstream_ods.ods_binlog_d_order_base表中取数据经过清洗转换后生成
+gulfstream_dwd.dwd_order_make_d(专快-做单明细表)。
+
+3、dwm层(汇总层)：
+    从dwd层取数据做轻度汇总，会有一些count、sum、distinct操作。例如：从gulfstream_dwd.dwd_order_make_d取完数据生成
+gulfstream_dw.dwm_gulf_passenger_finish_behavior_his(专车乘客完单行为历史表)。
+
+4、dm层(集市层)：
+    高度汇总数据，产出通用的指标数据，同一指标只能存储在一张表中，上游可以是dwm层也可以直接是dwd层。例如：
+gulfstream_dm.dm_gulf_order_make_cust_d(专车-司机做单统计表-定制维度)直接从上游表gulfstream_dwd.dwd_order_make_d取数据。
+
+5、app层(应用层)：
+    根据业务需要，由前面几层数据统计而出的结果，可以直接提供查询展现(例如北极星：为管理层提供公司核心数据的app)。数据生成方式：由明细层、
+轻度汇总层，数据集市层生成，一般要求数据主要来源于集市层。例如：gulfstream_test.app_driver_gulf_w(北极星司机统计数据-专车-周)。
+
+6、dim层(维度层)：
+    用于存储维度数据，例如：whole_dw.dim_city(全局城市维表)和international.dim_car_base(车辆基础信息表)都是维表。
+
 

@@ -7,6 +7,7 @@
       <w>deleteall</w>
       <w>flatmap</w>
       <w>groupby</w>
+      <w>gulfstream</w>
       <w>hdfs</w>
       <w>inpath</w>
       <w>jobtracker</w>

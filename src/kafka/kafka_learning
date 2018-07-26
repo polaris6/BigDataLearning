@@ -1,5 +1,6 @@
 Kafka：分布式发布订阅消息系统
 
+一、基本概念
 Topic：
     在Kafka中表示一类消息的存储容器，一个Topic可以分布在多个Broker上，同时每个Broker中都会有这个Topic的一份副本，用于
 当集群中的一个Broker宕机时，转移到另一个Broker上继续工作。Topic是逻辑概念，表示存储的是这一类主题的数据。
@@ -23,7 +24,18 @@ Broker：
 协调partition迁移等工作。
 
 
-副本机制：
+二、Producer
+
+
+三、Consumer
+
+Consumer offset：
+    Consumer消费到哪个offset是Consumer自己管理的，默认情况：Kafka 0.9之前offset保存在了zookeeper，Kafka 0.9之后在服务端
+添加了一个“_consumer_offsets”的内部topic，用来保存消费者提交的offset；非默认情况：开发者可以根据业务需求自己存储offset。
+
+
+四、副本机制
+1、介绍：
     kafka的副本（Replica）机制，目的是为了增加kafka集群的高可用性。kafka实现副本机制后，每个分区可以有多个副本，并且会
 从其副本集合（Assigned Replica，AR）中选出一个副本作为Leader副本，所有的读写请求都由选举出的Leader副本处理。剩余的其他
 副本都做为Follower副本，Follower副本会从Leader副本处获取消息并更新到自己的Log中。同一分区的多个副本会被均匀地分配到集群
@@ -44,8 +56,7 @@ kafka集群的可用性。
               |   Partition:3    | Leader:3 |   Replicas:3,2,4     ISR:3,2,4
               |   Partition:4    | Leader:4 |   Replicas:4,3,5     ISR:4,3,5
 
-
-ISR集合：
+2、ISR集合：
     ISR（In-Sync Replica）已同步的副本，表示的是目前“可用（alive）”且消息量与Leader相差不多（能够catch-up）的副本集合，
 它是整个副本集合的一个子集。ISR集合中的副本所在节点必须维持着与zookeeper的连接（通过zookeeper的心跳机制）。每个分区中的
 Leader副本都会维护此分区的ISR集合，写请求首先由Leader副本处理，之后Follower副本会从Leader上拉取写入的消息，这个过程会有
@@ -54,9 +65,29 @@ Leader副本都会维护此分区的ISR集合，写请求首先由Leader副本�
 副本“追上”Leader副本的时候，这个Follower副本会被Leader副本重新加入到ISR中。
     PS：延迟时间可以理解为producer往leader中发送了message后，针对每个message有个计时器，如果超过一定的时间follower还
 没有从leader上拉取这个message，则认为延迟时间超过阈值。
+    能与Leader保持同步的Follower会进入ISR集合，不同步的Follower只会存在于AR，所以ISR <= AR。
+
+3、Leader选举：
+    如果某个partition的leader所在的broker宕机了，kafka会从ISR集合中选第一个replica作为Leader。如果此时ISR集合为空，看看
+是否允许unclean leader选举（config unclean.leader.election.enable = true 默认为true，保证高可用，但是会丢数据，无法保证
+offset的一致性），如果允许，则选举一个活着的replica，如果不允许（修改为false，保证强一致），则会等待ISR中的任何一个节点
+恢复并担任leader。
+    特殊情况如果kafka中所有节点都down了，也需要根据是否允许unclean leader选举来判断，如果允许则会选择第一个恢复的replica
+（不一定在ISR中）作为leader；如果不允许则等待ISR中的任何一个replica恢复并担任leader。
+    注意：所有Follower都不在ISR里面不代表Kafka不可用，只能说明此时Kafka不保证Leader挂掉的时候数据不丢失。
 
 
-HW & LEO：
+五、Controller
+    多个Broker可以做成一个Cluster（集群）对外提供服务，每个Cluster当中会选举出一个Broker来担任Controller（控制器），
+Controller是kafka集群的指挥中心（心脏），其他Broker则听从Controller指挥实现相应的功能。Controller负责管理整个集群中分区
+的状态、管理每个分区的副本状态、监听Zookeeper中数据的变化（当Partition的leader副本故障时由Controller负责为该Partition
+重新选举新的leader副本；当检测到ISR列表发生变化，由Controller通知集群中所有broker更新其元数据信息；使用kafka-topics.sh
+脚本为某个topic增加分区的时候也会由Controller负责分区的重新分配）。Controller也是一主多从的实现，所有Broker都会监听
+Controller Leader的状态，当Controller Leader出现故障时会重新选举新的Controller Leader。
+
+
+六、Offset
+1、HW & LEO：
     HW（HighWatermark，高水位），HW标记了一个特殊的offset，当消费者处理消息的时候，只能拉取到HW之前的消息，HW之后的消息
 对消费者来说是不可见的。HW也是由Leader副本管理的，当ISR集合中全部的Follower副本都拉取HW指定消息进行同步后，Leader副本
 会递增HW的值。HW之前的消息的状态称为“commit”，意思是这些消息在多个副本中同时存在，即使此时Leader副本损坏，也不会出现
@@ -65,29 +96,30 @@ HW & LEO：
 Leader副本追加消息的时候，Leader副本的LEO标记会递增；当Follower副本成功从Leader副本拉取消息并更新到本地的时候，Follower
 副本的LEO就会增加。
 
+2、ACK（别和传递保证语义混淆）：
+    ACK是生产者的机制，producer有个ack参数，有三个值 -1,1和0
+    同步模式(ack = -1)：leader和所有ISR副本集合中的follower都写成功并更新了HW才回复生产者。kafka默认-1
+    异步模式(ack = 1)：leader写入成功即可回复生产者，不用等followers的响应。
+    低延迟模式(ack = 0)：producer一旦发布消息就认为该条消息已经被写入，不用再等响应。
 
-Cluster & Controller：
-    多个Broker可以做成一个Cluster（集群）对外提供服务，每个Cluster当中会选举出一个Broker来担任Controller，Controller是
-kafka集群的指挥中心，其他Broker则听从Controller指挥实现相应的功能。Controller负责管理整个集群中分区和分区中副本的状态、
-监听zookeeper中数据的变化。Controller也是一主多从的实现，所有Broker都会监听Controller Leader的状态，当Controller Leader
-出现故障时会重新选举新的Controller Leader。
+3、传递保证语义：
+①、消息在producer和consumer之间传输的传递保证语义有三个级别：
+    At most once：消息可能会丢，但绝不会重复传递。
+    At least once：消息绝不会丢，但可能会重复传递。
+    Exactly once：每条消息只会被传递一次。
+    如果通过kafka传递的消息是幂等性的（一条消息被反复消费多次并不会对计算结果产生影响），使用At least once语义没有问题。
+②、怎么保证Exactly once：
+    Exactly once需要生产者和消费者共同决定
+    生产者端：给消息定义全局唯一的key，消费者来去重
+    消费者端：手动提交offset，将offset放在数据库中，利用事务的原子性实现“Exactly Once”语义。重启或Rebalance时，设置
+数据库中offset的位置。
+    https://www.zybuluo.com/tinadu/note/949867
 
 
-ACK 和传递保证语义别混淆：
-ACK：ACK是生产者的机制
-producer有个ack参数，有三个值 -1,1和0
-同步模式(ack = -1)：leader和所有ISR副本集合中的follower都写成功才回复生产者。kafka默认-1
-异步模式(ack = 1)：leader写入成功即可回复生产者，不用等followers的响应。
-低延迟模式(ack = 0)：producer一旦发布消息就认为该条消息已经被写入，不用再等响应。
 
 
-传递保证语义：
-消息在producer和consumer之间传输的传递保证语义有三个级别：
-At most once：消息可能会丢，但绝不会重复传递。
-At least once：消息绝不会丢，但可能会重复传递。
-Exactly once：每条消息只会被传递一次。
-如果通过kafka传递的消息是幂等性的（一条消息被反复消费多次并不会对计算结果产生影响），使用At least once语义没有问题。
-Exactly once语义由生产者和消费者两部分共同决定：首先生产者要保证不会产生重复的消息，其次消费者不能重复拉取相同的消息。
+
+
 
 
 

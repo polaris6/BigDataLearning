@@ -25,6 +25,19 @@ Broker：
 
 
 二、Producer
+1、生产者相关：
+    每个生产者可以指定多个topic进行生产，多个生产者也可以指定一个topic进行生产（但是容易造成消息顺序的混乱），生产者还
+可以指定某一个topic的partition进行生产（通过partitioner）。
+    消息准备发送的过程中，producer将会和选定topic下所有的partition leader保持socket连接，消息本身并不进入Controller，
+producer根据路由规则直接通过socket将消息发送到指定分区的leader所在的Broker上，但是路由规则中leader所在的Broker则需要
+Controller告诉生产者。
+
+2、同步/异步发送：
+    当producer发送消息时，它可以选择一次发送一条消息，也可以选择将一定量的数据缓存在内存中，然后再批量发送（设置批量发送
+的条目和发送时间间隔，满足其中一个条件就触发发送）。
+    同步模式的特点：sync，每次生产一条消息，等待消息返回结果后再生产下一条。实时性高，但是只能一对一，需要被调方吞吐
+不小于调用方吞吐，而且被调方出问题会导致调用方出问题。
+    异步模式的特点：async，高吞吐，实时性较差，不能使调用者及时收到信息处理的结果。
 
 
 三、Consumer
@@ -109,10 +122,12 @@ Leader副本追加消息的时候，Leader副本的LEO标记会递增；当Follo
     Exactly once：每条消息只会被传递一次。
     如果通过kafka传递的消息是幂等性的（一条消息被反复消费多次并不会对计算结果产生影响），使用At least once语义没有问题。
 ②、怎么保证Exactly once：
+    kafka新版本0.11版本已经支持Exactly once
     Exactly once需要生产者和消费者共同决定
     生产者端：给消息定义全局唯一的key，消费者来去重
     消费者端：手动提交offset，将offset放在数据库中，利用事务的原子性实现“Exactly Once”语义。重启或Rebalance时，设置
 数据库中offset的位置。
+https://www.jdon.com/48977
     https://www.zybuluo.com/tinadu/note/949867
 
 

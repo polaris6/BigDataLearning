@@ -101,12 +101,26 @@ offset的一致性），如果允许，则选举一个活着的replica，如果�
 
 
 六、Controller
-    多个Broker可以做成一个Cluster（集群）对外提供服务，每个Cluster当中会选举出一个Broker来担任Controller（控制器），
-Controller是kafka集群的指挥中心（心脏），其他Broker则听从Controller指挥实现相应的功能。Controller负责管理整个集群中分区
-的状态、管理每个分区的副本状态、监听Zookeeper中数据的变化（当Partition的leader副本故障时由Controller负责为该Partition
-重新选举新的leader副本；当检测到ISR列表发生变化，由Controller通知集群中所有broker更新其元数据信息；使用kafka-topics.sh
-脚本为某个topic增加分区的时候也会由Controller负责分区的重新分配）。Controller也是一主多从的实现，所有Broker都会监听
-Controller Leader的状态，当Controller Leader出现故障时会重新选举新的Controller Leader。
+1、为什么会有Controller:
+    在Kafka早期版本的设计中，每个broker都会在zookeeper上注册Watcher，zookeeper上就会出现大量的Watcher，当分区或副本状态
+变化时会唤醒很多不必要的Watcher，这种严重依赖zookeeper的设计出现了“脑裂”、“羊群效应”以及zookeeper集群过载的情况。
+在新版本设计中，只有Controller Leader在zookeeper上注册Watcher，其他broker几乎不用监听zookeeper的数据变化。
+
+2、Controller概述：
+    多个Broker可以做成一个Cluster（集群）对外提供服务，每个Cluster当中会选举出一个Broker来担任Controller Leader（控制器），
+Controller Leader是kafka集群的指挥中心（心脏），负责管理整个集群中所有的分区和分区中副本的状态、监听Zookeeper中数据的变化
+（当Partition的leader副本故障时由Controller负责为该Partition重新选举新的leader副本；当检测到ISR列表发生变化，由Controller
+通知集群中所有broker更新其元数据信息；使用kafka-topics.sh脚本为某个topic增加分区的时候也会由Controller负责分区的重新分配）。
+    选举Controller Leader依赖于Zookeeper实现，每个Broker启动时都会创建一个KafkaController对象，但是集群中只能存在一个
+Controller Leader来对外提供服务。在集群启动时，每个Broker上的KafkaController会在指定的Zookeeper路径下创建临时节点，只有
+第一个成功创建节点的KafkaController才能成为Leader，其余的KafkaController则成为Follower。当Leader出现故障后，所有的
+Follower会收到通知，再次竞争在该路径下创建节点从而选出新的Leader。
+    KafkaController是zookeeper与kafka集群交互的桥梁：它一方面对zookeeper进行监听，其中包括broker写入到zookeeper中的数据，
+也包括管理员使用脚本写入的数据；另一方面根据zookeeper中数据的变化做出相应的处理。
+
+3、Zookeeper Listener：
+    KafkaController会通过zookeeper监控整个kafka集群的运行状态，响应管理员指定的相关操作。具体的实现方式是在zookeeper的
+指定节点上添加listener，监听此节点中的数据变化或是其子节点的变化，从而触发相应的业务逻辑。
 
 
 七、Offset

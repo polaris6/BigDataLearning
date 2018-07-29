@@ -5,8 +5,9 @@ Topic：
     在Kafka中表示一类消息的存储容器，一个Topic可以分布在多个Broker上，同时每个Broker中都会有这个Topic的一份副本，用于
 当集群中的一个Broker宕机时，转移到另一个Broker上继续工作。Topic是逻辑概念，表示存储的是这一类主题的数据。
 Partition：
-    是消息存储的最小容器，一个Topic至少一个Partition。在Topic中，每个Partition都映射到一个逻辑日志文件，这个日志文件被
-表示为一系列等大小的物理文件夹，每一个Partition都是有序且不可变的文件序列。Partition是物理概念，是真正存储数据的容器。
+    是消息存储的最小容器，一个Topic至少一个Partition。Partition在逻辑上对应着一个Log，当生产者将消息写入分区时，实际上是
+写入到了分区对应的Log中，Log是一个逻辑概念，对应到磁盘上的一个文件夹。Partition是物理概念，是真正存储数据的容器。
+Kafka保证同一个Partition内消息的有序性，但是对于同一Topic的多个Partition内的消息，Kafka不保证其顺序性。
 Offset：
     消息在Partition中的编号，编号顺序不跨Partition
 Producer：
@@ -44,7 +45,8 @@ Controller告诉生产者。
 
 Consumer offset：
     Consumer消费到哪个offset是Consumer自己管理的，默认情况：Kafka 0.9之前offset保存在了zookeeper，Kafka 0.9之后在服务端
-添加了一个“_consumer_offsets”的内部topic，用来保存消费者提交的offset；非默认情况：开发者可以根据业务需求自己存储offset。
+添加了一个“__consumer_offsets”的内部topic，用来保存消费者提交的offset；非默认情况：开发者可以根据业务需求将offset存储
+别的地方。
 
 
 四、副本机制
@@ -122,24 +124,10 @@ Leader副本追加消息的时候，Leader副本的LEO标记会递增；当Follo
     Exactly once：每条消息只会被传递一次。
     如果通过kafka传递的消息是幂等性的（一条消息被反复消费多次并不会对计算结果产生影响），使用At least once语义没有问题。
 ②、怎么保证Exactly once：
-    kafka新版本0.11版本已经支持Exactly once
-    Exactly once需要生产者和消费者共同决定
-    生产者端：给消息定义全局唯一的key，消费者来去重
-    消费者端：手动提交offset，将offset放在数据库中，利用事务的原子性实现“Exactly Once”语义。重启或Rebalance时，设置
-数据库中offset的位置。
-https://www.jdon.com/48977
-    https://www.zybuluo.com/tinadu/note/949867
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    kafka新版本0.11版本已经支持Exactly once，Exactly once需要生产者和消费者共同决定
+    生产者端：如果生产者发送消息后，遇到网络问题，无法获取响应，生产者就无法判断消息是否提交给了Kafka，会进行消息重传。
+解决方案是为每个消息添加一个全局唯一主键，生产者不做其他特殊处理，遇到网络问题时进行重传，由消费者对消息进行去重。
+    消费者端：不使用“__consumer_offsets”topic，将offset存在数据库中，利用事务的原子性实现“Exactly Once”，将offset和
+消息处理结果放在一个事务中，事务执行成功则认为此消息被消费，否则事务回滚需要重新消费。当出现消费者宕机重启或Rebalance
+操作时，消费者可以从数据库中找到对应的offset，然后调用KafkaConsumer.seek()方法手动设置消费位置，从此offset处开始消费。
+注：seek()方法指定消费者起始消费的位置。

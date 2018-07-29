@@ -1,13 +1,21 @@
 Kafka：分布式发布订阅消息系统
 
-一、基本概念
+一、Kafka的优势
+    Kafka是高吞吐、高可用、高并发的分布式发布订阅消息系统，它具有近乎实时性的消息处理能力，支持离线数据处理和实时数据
+处理，即使面对海量数据也能高效地存储和查询数据。Kafka把数据以消息的形式持久化到磁盘，即使Kafka出现宕机，也可以保证数据
+不会丢失，为了避免磁盘上的数据不断增长，Kafka还提供了日志清理、日志压缩等功能。Kafka有健壮的Replication（副本）机制，
+实现消息冗余备份，提高容灾能力。Kafka可以作为整个系统的中枢，负责在任意两个子系统之间传递数据，所有的存储只与Kafka通信，
+我们不用再去了解各个子系统、服务、存储的相关接口，只需要面向Kafka编程即可。
+
+
+二、基本概念
 Topic：
     在Kafka中表示一类消息的存储容器，一个Topic可以分布在多个Broker上，同时每个Broker中都会有这个Topic的一份副本，用于
 当集群中的一个Broker宕机时，转移到另一个Broker上继续工作。Topic是逻辑概念，表示存储的是这一类主题的数据。
 Partition：
-    是消息存储的最小容器，一个Topic至少一个Partition。Partition在逻辑上对应着一个Log，当生产者将消息写入分区时，实际上是
-写入到了分区对应的Log中，Log是一个逻辑概念，对应到磁盘上的一个文件夹。Partition是物理概念，是真正存储数据的容器。
-Kafka保证同一个Partition内消息的有序性，但是对于同一Topic的多个Partition内的消息，Kafka不保证其顺序性。
+    是消息存储的最小容器，一个Topic至少一个Partition，Partition是物理概念，是真正负责数据存储的容器。每个Partition对应着
+一个Log，Log是一个逻辑概念，对应到磁盘上的一个文件夹，当生产者将消息写入分区时，实际上是写入到分区对应的Log中。Kafka保证
+同一个Partition内消息的有序性，但是对于同一Topic的多个Partition内的消息，Kafka不保证其顺序性。
 Offset：
     消息在Partition中的编号，编号顺序不跨Partition
 Producer：
@@ -25,7 +33,7 @@ Broker：
 协调partition迁移等工作。
 
 
-二、Producer
+三、Producer
 1、生产者相关：
     每个生产者可以指定多个topic进行生产，多个生产者也可以指定一个topic进行生产（但是容易造成消息顺序的混乱），生产者还
 可以指定某一个topic的partition进行生产（通过partitioner）。
@@ -41,7 +49,7 @@ Controller告诉生产者。
     异步模式的特点：async，高吞吐，实时性较差，不能使调用者及时收到信息处理的结果。
 
 
-三、Consumer
+四、Consumer
 
 Consumer offset：
     Consumer消费到哪个offset是Consumer自己管理的，默认情况：Kafka 0.9之前offset保存在了zookeeper，Kafka 0.9之后在服务端
@@ -49,7 +57,7 @@ Consumer offset：
 别的地方。
 
 
-四、副本机制
+五、副本机制
 1、介绍：
     kafka的副本（Replica）机制，目的是为了增加kafka集群的高可用性。kafka实现副本机制后，每个分区可以有多个副本，并且会
 从其副本集合（Assigned Replica，AR）中选出一个副本作为Leader副本，所有的读写请求都由选举出的Leader副本处理。剩余的其他
@@ -92,7 +100,7 @@ offset的一致性），如果允许，则选举一个活着的replica，如果�
     注意：所有Follower都不在ISR里面不代表Kafka不可用，只能说明此时Kafka不保证Leader挂掉的时候数据不丢失。
 
 
-五、Controller
+六、Controller
     多个Broker可以做成一个Cluster（集群）对外提供服务，每个Cluster当中会选举出一个Broker来担任Controller（控制器），
 Controller是kafka集群的指挥中心（心脏），其他Broker则听从Controller指挥实现相应的功能。Controller负责管理整个集群中分区
 的状态、管理每个分区的副本状态、监听Zookeeper中数据的变化（当Partition的leader副本故障时由Controller负责为该Partition
@@ -101,7 +109,7 @@ Controller是kafka集群的指挥中心（心脏），其他Broker则听从Contr
 Controller Leader的状态，当Controller Leader出现故障时会重新选举新的Controller Leader。
 
 
-六、Offset
+七、Offset
 1、HW & LEO：
     HW（HighWatermark，高水位），HW标记了一个特殊的offset，当消费者处理消息的时候，只能拉取到HW之前的消息，HW之后的消息
 对消费者来说是不可见的。HW也是由Leader副本管理的，当ISR集合中全部的Follower副本都拉取HW指定消息进行同步后，Leader副本

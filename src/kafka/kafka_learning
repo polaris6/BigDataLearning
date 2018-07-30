@@ -119,8 +119,18 @@ Follower会收到通知，再次竞争在该路径下创建节点从而选出新
 也包括管理员使用脚本写入的数据；另一方面根据zookeeper中数据的变化做出相应的处理。
 
 3、Zookeeper Listener：
+①、监控方式：
     KafkaController会通过zookeeper监控整个kafka集群的运行状态，响应管理员指定的相关操作。具体的实现方式是在zookeeper的
 指定节点上添加listener，监听此节点中的数据变化或是其子节点的变化，从而触发相应的业务逻辑。
+②、Zookeeper的Watcher机制：
+    zookeeper的节点可以被监控，包括这个节点目录中存储的数据的修改、子节点目录的变化，一旦变化可以通知设置监控的客户端。
+我们可以通过在zookeeper上注册watcher来监听这些数据的变化，watcher只会触发一次，所以触发过后想要继续监听，需要重新进行
+注册。
+    watcher机制官方说明：一个Watcher是一个一次性的触发器，当被设置了Watcher节点的数据发生了改变的时候，服务器将这个改变
+发送给设置Watcher的客户端，以便通知它们。
+③、Zookeeper Listener：
+    因为反复注册watcher比较麻烦，所以出现了对zookeeper原生API的封装 — ZKClient，ZkClient给我们提供了一套监听方式，通过
+listener来实现watcher注册，开发人员只需要订阅Listener即可，避免了繁琐的反复watcher操作、简化了代码的复杂程度。
 
 
 七、Offset

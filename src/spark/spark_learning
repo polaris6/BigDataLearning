@@ -1,72 +1,75 @@
 一：Spark编程模型
-    spark在运算期间，将输入数据与中间计算结果保存在内存中，直接在内存中计算。用户也可以将重复利用的数据缓存在内存中，缩短数据读写时间，以提高下次
-计算的效率。spark基于内存计算的特性使其擅长于迭代式与交互式任务，集群规模与spark性能之间呈正比关系。
+    spark在运算期间，将输入数据与中间计算结果保存在内存中，直接在内存中计算。用户也可以将重复利用的数据缓存在内存中，
+缩短数据读写时间，以提高下次计算的效率。spark基于内存计算的特性使其擅长于迭代式与交互式任务，集群规模与spark性能之间呈
+正比关系。
 
 1、RDD弹性分布式数据集
-    RDD是一个容错的、并行的数据结构，可以让用户显式地将数据存储到磁盘或内存中，并控制数据的分区，它也是不变的(immutable)数据结构存储。RDD本质上
-是逻辑分区记录的集合，在集群中，一个RDD可以包含多个分布在不同节点上的分区，每个分区是一个dataset片段，其中RDD的每个逻辑分区Partition都对应
-Block Manager(物理存储管理器)中的物理数据块Block(保存在内存或硬盘上)。RDD是spark的核心数据结构，通过RDD的依赖关系形成spark的调度顺序，
-spark应用程序本质是一组对RDD的操作。RDD中保存了逻辑分区与物理数据块之间的映射关系，以及父辈RDD的依赖转换关系。
+    RDD是一个容错的、并行的数据结构，可以让用户显式地将数据存储到磁盘或内存中，并控制数据的分区，它也是不变的(immutable)
+数据结构存储。RDD本质上是逻辑分区记录的集合，在集群中，一个RDD可以包含多个分布在不同节点上的分区，每个分区是一个dataset
+片段，其中RDD的每个逻辑分区Partition都对应Block Manager(物理存储管理器)中的物理数据块Block（保存在内存或硬盘上）。RDD是
+spark的核心数据结构，通过RDD的依赖关系形成spark的调度顺序，spark应用程序本质是一组对RDD的操作。RDD中保存了逻辑分区与
+物理数据块之间的映射关系，以及父辈RDD的依赖转换关系。
     RDD的两种创建方式：从文件系统输入(如HDFS)创建 和 从已存在的RDD转换得到新的RDD。
-    RDD的两种操作算子：Transformation 和 Action  Transformation类型的算子不是立刻执行，而是延迟执行，也就是说从一个RDD变换为另一个RDD的
-操作需要等到Action操作触发时，才会真正执行。Action类型的算子会触发job的提交，其他的操作只是生成对应的RDD关系链。无论执行了多少次Transformation
-操作，RDD都不会真正执行运算，只有当Action操作被执行时，运算才会触发。
-    RDD可以相互依赖，如果RDD的每个分区最多只能被一个Child RDD的一个分区使用，称为窄依赖(narrow dependency)；若多个Child RDD分区都可以使用，
-则称为宽依赖(wide dependency)。不同的操作会产生不同的依赖，例如map会产生窄依赖，join会产生宽依赖(join会分为两种，一种是join with inputs
-co-partitioned，输入和输出被分到同等的分区(输入端某个分区的数据在输出端对应分区里必须有)，这种是窄依赖；另一种join with inputs not
-co-partitioned是宽依赖)。
-    RDD支持容错性：RDD天生是支持容错的。首先它自身是一个不变的数据集，其次RDD之间通过lineage产生依赖关系，因此RDD能够记住构建它的操作图，当执行
-任务的worker失败时，完全可以通过操作图获得之前执行的操作，重新计算。因此不用采用replication方式支持容错，很好地降低了跨网络的数据传输成本。
-    RDD的高效性：RDD提供了两方面的特性：persistence(持久化)和partitioning(分区)，用户可以通过persist与partitionBy函数来控制这两个特性。
-RDD的分区特性与并行计算能力(RDD定义了parallerize函数)，使得spark可以更好地利用可伸缩的硬件资源。如果将分区与持久化结合起来，就能更加高效地处理
-海量数据。另外，RDD本质上是一个内存数据集，在访问RDD时，指针只会指向与操作相关的部分，例如存在一个面向列的数据结构，其中一个实现为Int型数组，另一个
-实现为Float型数组，如果只需要访问Int型字段，RDD的指针可以只访问Int数组，避免扫描整个数据结构。
+    RDD的两种操作算子：Transformation 和 Action  Transformation类型的算子不是立刻执行，而是延迟执行，也就是说从一个RDD
+变换为另一个RDD的操作需要等到Action操作触发时，才会真正执行。Action类型的算子会触发job的提交，其他的操作只是生成对应的
+RDD关系链。无论执行了多少次Transformation操作，RDD都不会真正执行运算，只有当Action操作被执行时，运算才会触发。
+    RDD可以相互依赖，如果RDD的每个分区最多只能被一个Child RDD的一个分区使用，称为窄依赖(narrow dependency)；若多个
+Child RDD分区都可以使用，则称为宽依赖(wide dependency)。不同的操作会产生不同的依赖，例如map会产生窄依赖，join会产生
+宽依赖(join会分为两种，一种是join with inputs co-partitioned，输入和输出被分到同等的分区(输入端某个分区的数据在输出端
+对应分区里必须有)，这种是窄依赖；另一种join with inputs not co-partitioned是宽依赖)。
+    RDD支持容错性：RDD天生是支持容错的。首先它自身是一个不变的数据集，其次RDD之间通过lineage产生依赖关系，因此RDD能够
+记住构建它的操作图，当执行任务的worker失败时，完全可以通过操作图获得之前执行的操作，重新计算。因此不用采用replication
+方式支持容错，很好地降低了跨网络的数据传输成本。
+    RDD的高效性：RDD提供了两方面的特性：persistence（持久化）和partitioning（分区），用户可以通过persist与partitionBy
+函数来控制这两个特性。RDD的分区特性与并行计算能力(RDD定义了parallerize函数)，使得spark可以更好地利用可伸缩的硬件资源。
+如果将分区与持久化结合起来，就能更加高效地处理海量数据。另外，RDD本质上是一个内存数据集，在访问RDD时，指针只会指向与操作
+相关的部分，例如存在一个面向列的数据结构，其中一个实现为Int型数组，另一个实现为Float型数组，如果只需要访问Int型字段，
+RDD的指针可以只访问Int数组，避免扫描整个数据结构。
 
 2、Spark算子
-    spark应用程序的本质，就是把需要处理的数据转换为RDD，然后将RDD通过一系列变换(Transformation)和操作(Action)得到结果，这些变换和操作就是
-算子。
+    spark应用程序的本质，就是把需要处理的数据转换为RDD，然后将RDD通过一系列变换（Transformation）和操作（Action）得到
+结果，这些变换和操作就是算子。
     Transformation：map、filter、flatMap、groupByKey、reduceBykey、union、join、mapValues、sort、partitionBy、sample
     Action：count、reduce、aggregate、collect、lookup、saveAsTextFile、foreach
-    Transformation返回值还是一个RDD，它使用了链式调用的设计模式，对一个RDD进行计算后，变换成另一个RDD，然后这个RDD又可以进行另外一次转换，这个
-过程是分布式的。
+    Transformation返回值还是一个RDD，它使用了链式调用的设计模式，对一个RDD进行计算后，变换成另一个RDD，然后这个RDD又可以
+进行另外一次转换，这个过程是分布式的。
     Action返回值不是一个RDD，它要么是一个scala的普通集合，要么是一个值，要么为空。
 
 
 二：Spark机制原理
-    Spark架构采用了分布式计算中的Master-Slave模型，Master是对应集群中的含有Master进程的节点，负责管理全部Worker节点，负责整个集群的正常运行；
-Slave是集群中含有Worker进程的节点，负责管理executor并与Master节点通信。Master作为整个集群的控制器，负责整个集群的正常运行；Worker相当于计算
-节点，接收主节点命令并进行状态汇报；Executor负责任务的执行；Client作为用户的客户端负责提交应用，Driver负责控制一个应用的执行。
+    Spark架构采用了分布式计算中的Master-Slave模型，Master是对应集群中的含有Master进程的节点，负责管理全部Worker节点，
+负责整个集群的正常运行；Slave是集群中含有Worker进程的节点，负责管理executor并与Master节点通信。Master作为整个集群的
+控制器，负责整个集群的正常运行；Worker相当于计算节点，接收主节点命令并进行状态汇报；Executor负责任务的执行；Client作为
+用户的客户端负责提交应用，Driver负责控制一个应用的执行。
 
 1、Spark运行架构
-    Spark集群部署后，需要在主节点和从节点分别启动Master进程和Worker进程，对整个集群进行控制。在一个Spark应用的执行过程中，Driver和Worker是
-两个重要角色。Driver程序是应用逻辑执行的起点，负责应用的解析、切分Stage并调度Task到Executor执行，包含DAG Scheduler等重要对象；而多个Worker
-用来管理计算节点和创建Executor并行处理任务。在执行阶段，Driver会将Task和Task所依赖的file和jar序列化后传递给对应的Worker机器，同时Executor
-对相应数据分区的任务进行处理。
-    每个Application获取专属的executor进程，该进程在Application期间一直驻留，并以多线程方式运行tasks。这种Application隔离机制有其优势，
-从调度角度看(每个Driver调度它自己的任务)，从运行角度看(来自不同Application的Task运行在不同的JVM)。这也意味着Spark Application不能跨应用
-程序共享数据，除非将数据写入到外部存储系统。
-    提交SparkContext的Client应该靠近Worker节点(运行Executor)的节点，最好是在同一个Rack里，因为SparkApplication运行过程中SparkContext
-和Executor之间有大量的信息交换，如果想在远程集群中运行，最好使用RPC将SparkContext提交给集群。
+    Spark集群部署后，需要在主节点和从节点分别启动Master进程和Worker进程，对整个集群进行控制。在一个Spark应用的执行过程
+中，Driver和Worker是两个重要角色。Driver程序是应用逻辑执行的起点，负责应用的解析、切分Stage并调度Task到Executor执行，
+包含DAG Scheduler等重要对象；而多个Worker用来管理计算节点和创建Executor并行处理任务。在执行阶段，Driver会将Task和Task所
+依赖的file和jar序列化后传递给对应的Worker机器，同时Executor对相应数据分区的任务进行处理。
+    每个Application获取专属的executor进程，该进程在Application期间一直驻留，并以多线程方式运行tasks。这种Application隔离
+机制有其优势，从调度角度看（每个Driver调度它自己的任务），从运行角度看（来自不同Application的Task运行在不同的JVM）。
+这也意味着Spark Application不能跨应用程序共享数据，除非将数据写入到外部存储系统。
+    提交SparkContext的Client应该靠近Worker节点（运行Executor）的节点，最好是在同一个Rack里，因为SparkApplication运行过程
+中SparkContext和Executor之间有大量的信息交换，如果想在远程集群中运行，最好使用RPC将SparkContext提交给集群。
 
 2、Spark运行流程(见图)
-    (1)构建Spark Application的运行环境(启动SparkContext)，SparkContext向资源管理器（可以是Standalone、Mesos或YARN）注册并申请运行
-Executor资源。
+    (1)构建Spark Application的运行环境（启动SparkContext），SparkContext向资源管理器（可以是Standalone、Mesos或YARN）
+注册并申请运行Executor资源。
     (2)资源管理器分配Executor资源并启动StandaloneExecutorBackend，Executor运行情况将随着心跳发送到资源管理器上。
-    (3)Spark在进行transformation计算的时候，不会触发Job，只有执行action操作的时候，才会触发Job。在Driver中SparkContext根据RDD之间的
-依赖关系创建出DAG有向无环图，DAG Scheduler负责解析这个图，解析时是以Shuffle为边界，反向解析，构建stage。将多个任务根据依赖关系划分为不同的
-Stage，将每个Stage的TaskSet提交给Task Scheduler，Executor向SparkContext申请Task，Task Scheduler将Task发放给Executor，任务会在
-Executor进程的多个Task线程上执行，完成Task任务后将结果信息提交到ExecutorBackend中，它会将信息提交给Task Scheduler。
-    (4)Task Scheduler接到消息后通知TaskSetManager，移除该Task任务，开始执行下一个任务。TaskScheduler同时会将信息同步到TaskSetManager
-(在TaskScheduler内部实现中创建了TaskSetManager实例来管理任务集TaskSet的生命周期)中一份，全部任务执行完毕后TaskSetManager将结果反馈给
-DAG Scheduler，如果属于ResultTask会交给JobListener。否则全部任务执行完毕后写入数据，释放所有资源。
+    (3)Spark在进行transformation计算的时候，不会触发Job，只有执行action操作的时候，才会触发Job。在Driver中SparkContext
+根据RDD之间的依赖关系创建出DAG有向无环图，DAG Scheduler负责解析这个图，解析时是以Shuffle为边界，反向解析，构建stage。
+将多个任务根据依赖关系划分为不同的Stage，将每个Stage的TaskSet提交给Task Scheduler，Executor向SparkContext申请Task，
+Task Scheduler将Task发放给Executor，任务会在Executor进程的多个Task线程上执行，完成Task任务后将结果信息提交到
+ExecutorBackend中，它会将信息提交给Task Scheduler。
+    (4)Task Scheduler接到消息后通知TaskSetManager，移除该Task任务，开始执行下一个任务。TaskScheduler同时会将信息同步到
+TaskSetManager（在TaskScheduler内部实现中创建了TaskSetManager实例来管理任务集TaskSet的生命周期）中一份，全部任务执行完毕
+后TaskSetManager将结果反馈给DAG Scheduler，如果属于ResultTask会交给JobListener。否则全部任务执行完毕后写入数据，释放
+所有资源。
 
 3、Spark容错机制及依赖
-    (1)lineage（血统）机制：每个RDD除了包含分区信息外，还包含它从父辈RDD变换过来的步骤，以及如何重建某一块数据的信息，RDD的这种容错机制又称"血统"
-(lineage)容错。RDD在lineage容错方面采用两种依赖来保证容错方面的性能：宽依赖和窄依赖。
-    (2)checkpoint（检查点）机制：checkpoint的本质是将RDD写入Disk来作为检查点，这种做法是为了通过lineage血统做容错的辅助，lineage过长会造成
-容错成本过高，这样就不如在中间阶段做检查点容错，如果之后有节点出现问题而丢失分区，从做检查点的RDD开始重做lineage，就会减少开销。
-
-
-
-
-
+    (1)lineage（血统）机制：每个RDD除了包含分区信息外，还包含它从父辈RDD变换过来的步骤，以及如何重建某一块数据的信息，
+RDD的这种容错机制又称"血统"（lineage）容错。RDD在lineage容错方面采用两种依赖来保证容错方面的性能：宽依赖和窄依赖。
+    (2)checkpoint（检查点）机制：checkpoint的本质是将RDD写入Disk来作为检查点，这种做法是为了通过lineage血统做容错的辅助，
+lineage过长会造成容错成本过高，这样就不如在中间阶段做检查点容错，如果之后有节点出现问题而丢失分区，从做检查点的RDD开始
+重做lineage，就会减少开销。

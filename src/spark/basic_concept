@@ -32,5 +32,3 @@ stage；遇到窄依赖就将这个RDD加入该stage中。
     Transformation返回值还是一个RDD，所有的Transformation采用的都是懒策略，如果只是将Transformation提交是不会执行计算的。
 14、Action：
     Action返回值不是一个RDD，而是一个scala集合，只有在Action被提交的时候计算才会被触发。
-
-

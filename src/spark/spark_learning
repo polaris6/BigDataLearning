@@ -6,10 +6,10 @@
 1、RDD弹性分布式数据集
     RDD是一个容错的、并行的数据结构，可以让用户显式地将数据存储到磁盘或内存中，并控制数据的分区，它也是不变的(immutable)
 数据结构存储。RDD本质上是逻辑分区记录的集合，在集群中，一个RDD可以包含多个分布在不同节点上的分区，每个分区是一个dataset
-片段，其中RDD的每个逻辑分区Partition都对应Block Manager(物理存储管理器)中的物理数据块Block（保存在内存或硬盘上）。RDD是
-spark的核心数据结构，通过RDD的依赖关系形成spark的调度顺序，spark应用程序本质是一组对RDD的操作。RDD中保存了逻辑分区与
+片段，其中RDD的每个逻辑分区Partition都对应Block Manager（物理存储管理器）中的物理数据块Block（保存在内存或硬盘上）。RDD
+是spark的核心数据结构，通过RDD的依赖关系形成spark的调度顺序，spark应用程序本质是一组对RDD的操作。RDD中保存了逻辑分区与
 物理数据块之间的映射关系，以及父辈RDD的依赖转换关系。
-    RDD的两种创建方式：从文件系统输入(如HDFS)创建 和 从已存在的RDD转换得到新的RDD。
+    RDD的两种创建方式：从文件系统输入（如HDFS）创建 和 从已存在的RDD转换得到新的RDD。
     RDD的两种操作算子：Transformation 和 Action  Transformation类型的算子不是立刻执行，而是延迟执行，也就是说从一个RDD
 变换为另一个RDD的操作需要等到Action操作触发时，才会真正执行。Action类型的算子会触发job的提交，其他的操作只是生成对应的
 RDD关系链。无论执行了多少次Transformation操作，RDD都不会真正执行运算，只有当Action操作被执行时，运算才会触发。

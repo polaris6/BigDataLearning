@@ -64,7 +64,7 @@ Consumer Group保证其订阅的Topic的每个分区只被分配给此Consumer G
 2、Consumer offset：
     Consumer消费到哪个offset是Consumer自己管理的，默认情况：Kafka 0.9之前offset保存在了zookeeper，Kafka 0.9之后在服务端
 添加了一个“__consumer_offsets”的内部topic，用来保存消费者提交的offset；非默认情况：开发者可以根据业务需求将offset存储
-别的地方。
+在别的地方。
 
 
 五、副本机制

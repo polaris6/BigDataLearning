@@ -1,7 +1,7 @@
 Hadoop主要解决了两件事情：数据的可靠存储和数据的分析处理
 
 
-一、MapReduce简介：
+一、MapReduce简介
    MapReduce中作业（job）是客户端执行的单位：它包括输入数据、MapReduce程序和配置信息。Hadoop通过把作业分成若干个小任务
 （task）来工作，任务分为两种类型：map任务和reduce任务。
    有两种类型的节点控制着作业执行过程：jobtracker和多个tasktracker。jobtracker通过调度任务在tasktracker上运行，来协调
@@ -25,7 +25,7 @@ reduce任务创建一个分区。每个partition包含许多键（及其关联�
    Hadoop的核心思想是MapReduce，shuffle又是MapReduce的核心，shuffle的主要工作是从Map结束到Reduce开始之间的过程。
 MapReduce保证每个reducer的输入都已按键排序，可以将shuffle（洗牌）理解为系统执行排序的过程。shuffle阶段又分为Map端的
 shuffle和Reduce端的shuffle：shuffle图
-1、Map端的shuffle
+1、Map端的shuffle：
    Map端会处理输入数据并产生中间结果，这个中间结果会写到本地磁盘，在写入磁盘前Map的输出会先写到内存缓冲区，当写入的数据
 达到设定的阈值时，系统会启动一个线程将缓冲区的数据写到磁盘，这个过程叫spill。
    在spill写入之前，会先进行两次排序，首先根据数据所属的partition进行排序（key的hash值对partition数取模，选定分区），
@@ -36,7 +36,7 @@ shuffle和Reduce端的shuffle：shuffle图
 可能会产生多个spill文件，在每个map任务完成前，会通过多路归并算法将这些spill文件归并成一个文件。至此，Map端的shuffle就结
 束了。
 
-2、Reduce端的shuffle
+2、Reduce端的shuffle：
    Reduce端的shuffle主要包括三个阶段：copy、sort（merge）和reduce
    首先将Map端产生的输出文件拷贝到Reduce端，Map端进行partition的时候，实际上就指定了每个reducer要处理的数据（partition对
 应了reducer），所以reducer在拷贝数据的时候只需要拷贝与自己对应的partition中的数据，每个reducer会对应一个或多个partition。
@@ -45,5 +45,14 @@ shuffle和Reduce端的shuffle：shuffle图
    最后是reduce阶段，这个过程产生最终的输出结果，并将其写到HDFS。
 
 
-三、HDFS：
-   HDFS是Hadoop的分布式文件系统(Hadoop Distributed Filesystem)
+三、HDFS
+   HDFS是Hadoop的分布式文件系统（Hadoop Distributed FileSystem），以流式数据访问模式来存储超大文件。HDFS是传统的主从
+Master-Slave架构：一个集群由一个Master节点和若干个Slave节点组成。在HDFS中，Master节点称为NameNode，Slave节点称为
+DataNode，NameNode管理文件系统的元数据，DataNode存储实际的数据。
+1、三种节点：
+    HDFS的三种节点：NameNode，DataNode，Secondary NameNode
+    ①、NameNode：名称节点，负责管理分布式文件系统的命名空间，负责记录文件是如何分割成数据块，以及这些数据块分别被存储
+在哪些数据节点上。
+    ②、DataNode：数据节点，文件系统的工作节点，根据需要存储和检索数据块，并且定期向NameNode发送他们所存储的块的列表。
+    ③、Secondary NameNode：辅助后台程序，与NameNode进行通信，以便定期保存HDFS元数据的快照。
+

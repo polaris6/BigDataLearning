@@ -23,7 +23,7 @@
     这种方式能保证严格的事务一致性，消息只会被处理一次。基于Direct的方式，使用kafka的低阶api，Spark Streaming自己负责
 追踪消费的offset，并保存在checkpoint中。Spark自己一定是同步的，因此可以保证数据仅消费一次。
 ②、高性能：
-    如果要保证零数据丢失，在基于Receiver的方式中，需要开启WAL机制。这种方式效率低下，因为数据实际上被复制了两份，Kafka
+    如果要保证数据零丢失，在基于Receiver的方式中，需要开启WAL机制。这种方式效率低下，因为数据实际上被复制了两份，Kafka
 自己本身有高可靠的机制，会对数据复制一份，这里又会复制一份到WAL中。基于Direct的方式，不需要开启WAL机制。
 ③、并行读取：
     Spark会创建跟Kafka Partition一样多的RDD Partition，并且会并行从Kafka中读取数据。所以在Kafka Partition和RDD Partition

@@ -1,24 +1,32 @@
-https://blog.csdn.net/qq_19968255/article/details/80633288
-https://blog.csdn.net/qq_21234493/article/details/51340138
-https://blog.csdn.net/qq_21234493/article/details/51339450
-https://blog.csdn.net/wisgood/article/details/51815845
-spark读取kafka数据流提供了两种方式createStream和createDirectStream。
-两者区别如下：
-1、KafkaUtils.createStream
-构造函数为KafkaUtils.createStream(ssc, [zk], [consumer group id], [per-topic,partitions] )
-使用了receivers来接收数据，利用的是Kafka高层次的消费者api，对于所有的receivers接收到的数据将会保存在Spark executors中，然后通过Spark Streaming启动job来处理这些数据，默认会丢失，可启用WAL日志，该日志存储在HDFS上
-A、创建一个receiver来对kafka进行定时拉取数据，ssc的rdd分区和kafka的topic分区不是一个概念，故如果增加特定主体分区数仅仅是增加一个receiver中消费topic的线程数，并不增加spark的并行处理数据数量
-B、对于不同的group和topic可以使用多个receivers创建不同的DStream
-C、如果启用了WAL，需要设置存储级别，即KafkaUtils.createStream(….,StorageLevel.MEMORY_AND_DISK_SER)
+一、从Kafka中读数据的方式
+    SparkStreaming基于kafka获取数据的方式主要有两种：Receiver和Direct。
+    基于Receiver的方式是使用Kafka的High Level Consumer API高阶API来实现的，为createStream。
+    基于Direct的方式是使用Kafka的Low Level Consumer API低阶API来实现的，为createDirectStream。
 
 
-2.KafkaUtils.createDirectStream
-区别Receiver接收数据，这种方式定期地从kafka的topic+partition中查询最新的偏移量，再根据偏移量范围在每个batch里面处理数据，使用的是kafka的简单消费者api
-优点:
-A、 简化并行，不需要多个kafka输入流，该方法将会创建和kafka分区一样的rdd个数，而且会从kafka并行读取。
-B、高效，这种方式并不需要WAL，WAL模式需要对数据复制两次，第一次是被kafka复制，另一次是写到wal中
-C、恰好一次语义(Exactly-once-semantics)，传统的读取kafka数据是通过kafka高层次api把offset写入zookeeper中，存在数据丢失的可能性是zookeeper中和ssc的offset不一致。EOS通过实现kafka低层次api，偏移量仅仅被ssc保存在checkpoint中，消除了zk和ssc偏移量不一致的问题。缺点是无法使用基于zookeeper的kafka监控工具
+二、KafkaUtils.createStream
+1、介绍：
+    Receiver从Kafka中获取的数据都是存储在Spark Executor的内存中的，然后Spark Streaming启动job去处理那些数据。
+    在通过Kafka Receiver获取Kafka数据的过程中，这台机器有可能宕机了，如果来不及做备份，数据就会丢失，切换到另外一台机器
+上，也没有相关数据。如果要启用高可靠机制，让数据零丢失，就必须启用Spark Streaming的预写日志机制（Write Ahead Log，WAL）。
+该机制会同步地将接收到的Kafka数据写入分布式文件系统（比如HDFS）上的预写日志中。所以即使底层节点出现了失败，也可以使用
+预写日志中的数据进行恢复。
+2、优点：
+    不需要自己管理消息的offset，Consumer会将从特定的Partition读到的最后的offset保存至Zookeeper。
+3、缺点：
+    不能保证Exactly Once，如果启用WAL会导致性能较低，如果不启用可能会丢数据。
 
-总结：
 
-如果消费的消息精度不高，可以直接用createStream
+三、KafkaUtils.createDirectStream
+1、优点：
+①、Exactly Once：
+    这种方式能保证严格的事务一致性，消息只会被处理一次。基于Direct的方式，使用kafka的低阶api，Spark Streaming自己负责
+追踪消费的offset，并保存在checkpoint中。Spark自己一定是同步的，因此可以保证数据仅消费一次。
+②、高性能：
+    如果要保证零数据丢失，在基于Receiver的方式中，需要开启WAL机制。这种方式效率低下，因为数据实际上被复制了两份，Kafka
+自己本身有高可靠的机制，会对数据复制一份，这里又会复制一份到WAL中。基于Direct的方式，不需要开启WAL机制。
+③、并行读取：
+    Spark会创建跟Kafka Partition一样多的RDD Partition，并且会并行从Kafka中读取数据。所以在Kafka Partition和RDD Partition
+之间，有个一对一的映射关系。而Receiver的方式，这两个Partition是没任何关系的。
+2、缺点：
+    无法使用基于zookeeper的kafka监控工具。

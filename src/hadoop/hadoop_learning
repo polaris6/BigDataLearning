@@ -56,3 +56,11 @@ DataNode，NameNode管理文件系统的元数据，DataNode存储实际的数�
     ②、DataNode：数据节点，文件系统的工作节点，根据需要存储和检索数据块，并且定期向NameNode发送他们所存储的块的列表。
     ③、Secondary NameNode：辅助后台程序，与NameNode进行通信，以便定期保存HDFS元数据的快照。
 
+2、HDFS文件上传流程（见图）：
+    ①、由客户端向NameNode节点发出请求。
+    ②、NameNode向Client返回可以存数据的DataNode。
+    ③、客户端首先根据返回的信息先将文件分块（block）。
+    ④、然后通过NameNode返回的DataNode信息直接发送给相应的DataNode，写的过程是流式写入，一个块存入一个DataNode，存完后
+DataNode会备份到其他两台机器。
+    ⑤、DataNode向Client通信表示已经传完某数据块，同时向NameNode报告。
+    ⑥、其他的block块重复上面的过程（4和5），所有的数据块都上传结束后向NameNode报告，表明已经传完所有的数据块。

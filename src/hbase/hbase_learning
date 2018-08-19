@@ -1,11 +1,11 @@
 一、基本概念：
 1、HBase：
-    Hadoop Database的简称，HBase是分布式、面向列、用于海量数据的高速存储和读取的NoSQL数据库(准确的说是面向列族)，HDFS为
-HBase提供可靠的底层数据存储服务，MapReduce为HBase提供高性能的计算能力，Zookeeper为HBase提供稳定服务和Failover机制。
+    Hadoop Database的简称，HBase是分布式、面向列、用于海量数据的高速存储和读取的NoSQL数据库（准确的说是面向列族），HDFS
+为HBase提供可靠的底层数据存储服务，MapReduce为HBase提供高性能的计算能力，Zookeeper为HBase提供稳定服务和Failover机制。
 
 2、Column Family(列族)：
     HBase采用的是列式存储，根据列族来存储数据。列族是由一个一个的列组成，列族下面可以包含任意多的列，实现灵活的数据存取。
-列族支持动态扩展，无需预先定义列的名称和数量，列名由其列族前缀和标识符(此列名)组成，列族的所有列成员具有​​相同的前缀，
+列族支持动态扩展，无需预先定义列的名称和数量，列名由其列族前缀和标识符（此列名）组成，列族的所有列成员具有​​相同的前缀，
 例如courses:history和courses:math都是courses列族的成员，冒号起分隔作用。
     HBase的列族不是越多越好，官方推荐的是列族最好小于或者等于3，我们使用的场景一般是1个列族。HBase表创建的时候就必须
 指定列族。

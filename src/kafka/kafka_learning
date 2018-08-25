@@ -59,7 +59,9 @@ Consumer Group保证其订阅的Topic的每个分区只被分配给此Consumer G
 同一Topic，Consumer Group彼此之间不会干扰。因此，如果要实现一个消息可以被多个消费者同时消费（“广播”）的效果，则将
 每个消费者放入单独的一个Consumer Group；如果要实现一个消息只被一个消费者消费（“独占”）的效果，则将所有的Consumer放入
 一个Consumer Group中。
-    Kafka还通过Consumer Group实现消费者的水平扩展和故障转移
+    Kafka还通过Consumer Group实现消费者的水平扩展和故障转移，当某一个Consumer的处理能力不足以处理两个partition中的数据
+时，可以通过向Consumer Group中添加消费者的方式，触发Rebalance操作重新分配分区与消费者的对应关系，实现水平扩展。当某一个
+Consumer宕机时，Consumer Group会自动重新分配分区，由剩余的某一个Consumer接管对应的分区继续处理。
 
 2、Consumer offset：
     Consumer消费到哪个offset是Consumer自己管理的，默认情况：Kafka 0.9之前offset保存在了zookeeper，Kafka 0.9之后在服务端
@@ -190,8 +192,7 @@ LogSegment对应磁盘上的一个日志文件（.log）和一个索引文件（
 的性能开销，Kafka在生产者端进行压缩后，不在服务端进行解压，服务端存储的消息也是压缩消息，直到消费者获取消息后才在消费者
 端进行解压，这就实现了端对端的消息压缩。
 
-3、日志压缩（Log Compaction）：
-    Kafka默认保留7天的数据，Log Compaction在默认的删除规则之外提供了另一种删除过时数据的方式，就是对相同key的不同数据，
-只保留最后一条，前面的数据在合适的情况下删除。
-
-
+3、保留策略和日志压缩（Log Compaction）：
+    Kafka有两种保留策略：一种是根据消息保留的时间，Kafka默认保留7天的数据；另一种是根据Topic存储的数据大小。
+    Log Compaction在保留策略之外提供了另一种删除过时数据的方式，就是对相同key的不同数据，只保留最后一条，前面的数据在
+合适的情况下删除。

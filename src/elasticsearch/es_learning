@@ -1,0 +1,68 @@
+Elasticsearch：分布式可扩展的实时搜索和分析引擎
+
+一、作用
+    Elasticsearch是面向文档型数据库，它可以提供：分布式实时文档存储，并将每个字段都编入索引，使其可以被检索；实时分析的
+分布式搜索引擎；可以扩展到上百台服务器，处理PB级别的结构化或非结构化数据。
+
+
+二、基本概念
+1、Elasticsearch和关系型数据库术语对照表：
+    Elasticsearch ⇒  索引  ⇒ 类型 ⇒ 文档 ⇒ 字段（Fields）
+    关系型数据库  ⇒ 数据库 ⇒  表  ⇒  行  ⇒  列（Columns）
+    一个Elasticsearch集群中可以包含多个索引，相应的每个索引可以包含多个类型。这些不同的类型存储着多个文档，每个文档又有
+多个属性（字段）。
+
+2、数据格式：
+    Elasticsearch是面向文档型数据库，一条数据在这里就是一个文档。Elasticsearch使用JSON作为文档序列化的格式，比如下面
+这条用户数据：
+{
+    "name" : "John",
+    "sex" : "Male",
+    "age" : 25,
+    "birthDate" : "1990/05/01",
+    "about" : "I love to go rock climbing",
+    "interests" : [ "sports", "music" ]
+}
+
+
+三、索引
+    Elasticsearch最关键的功能就是提供强大的检索能力，往Elasticsearch里插入一条记录，其实就是直接PUT一个json对象，这个
+对象有多个fields，比如上面例子中的name、sex、age、interests等，在插入这些数据到Elasticsearch的同时，Elasticsearch会为
+这些字段建立倒排索引。
+1、索引示例：
+    假设有几条数据：
+    ID	   Name	   Age	  Sex
+    1	   Kate	   24	  Female
+    2	   John	   24	  Male
+    3	   Bill	   29	  Male
+    其中ID是Elasticsearch自建的文档id，那么Elasticsearch建立的索引如下：
+    Name：
+        Term	Posting List
+        Kate	    1
+        John	    2
+        Bill	    3
+    Age：
+        Term	Posting List
+         24       [1,2]
+         29	        3
+    Sex：
+        Term	Posting List
+        Female	    1
+        Male	  [2,3]
+
+2、Posting List：
+    Elasticsearch分别为每个field都建立了一个倒排索引，Kate、John、24、Female这些叫term（项），而[1,2]就是Posting List。
+Posting list存储了所有符合某个term的文档id。
+
+3、Term Dictionary：
+    Elasticsearch为了能快速找到某个term，将所有的term排个序，二分查找term，logN的查找效率，就像通过字典查找一样，这就是
+Term Dictionary。
+
+4、Term Index：
+    Term Index包含的是term的一些前缀，通过term index可以快速地定位到term dictionary的某个offset，然后从这个位置再往后
+顺序查找。
+    Term Index不需要存下所有的term，而仅仅是它们的一些前缀与Term Dictionary的block之间的映射关系，再结合一些压缩技术，
+可以使term index缓存到内存中。从term index查到对应的term dictionary的block位置之后，再去磁盘上找term，大大减少了磁盘
+随机读的次数。
+
+5、联合索引：

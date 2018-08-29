@@ -31,7 +31,7 @@ reduce迟迟不完成的情况。导致数据倾斜的原因有：
 
 ④、采用sum() group by的方式来代替count(distinct)完成计算：
     select count(distinct colA) from table1;
-    select count(1) from (select colA from table1 group by colA) alias_1;   group by 也可以去重
+    select count(1) from (select colA from table1 group by colA) alias_1;   group by也可以去重
 
 3、特殊情况特殊处理：
     在业务逻辑优化的效果不好的情况下，可以将倾斜的数据单独拿出来处理，最后union回去。

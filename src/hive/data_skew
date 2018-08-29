@@ -1,0 +1,37 @@
+Hive数据倾斜
+
+一、数据倾斜原因
+    数据倾斜就是key分布不均匀，导致分发到不同的reduce上，个别reduce任务特别重，导致其他reduce都完成，而这些个别的
+reduce迟迟不完成的情况。导致数据倾斜的原因有：
+1、key分布不均匀
+2、map端数据倾斜，输入文件太多且大小不一
+3、reduce端数据倾斜，分区器问题
+4、业务数据本身的特征
+
+
+二、解决方案
+1、参数调节：
+    设置 hive.map.aggr = true，Map端部分聚合，相当于Combiner。
+    设置 hive.groupby.skewindata = true，数据倾斜的时候进行负载均衡，查询计划生成两个MR job，第一个job先进行key随机分配
+处理，随机分布到Reduce中，每个Reduce做部分聚合操作，先缩小数据量。第二个job再进行真正的group by key处理，根据预处理的
+数据结果按照Group By Key分布到Reduce中（这个过程可以保证相同的Key被分布到同一个Reduce中），完成最终的聚合操作。
+
+2、SQL语句优化：
+①、大小表Join：
+    使用map join让小表（小于1000行）先进内存，在map端完成reduce。
+    注：map join就是在map端做join，map join会把小表全部读入内存中，在map阶段直接拿另外一个表的数据和内存中表数据做匹配。
+
+②、大表Join大表：
+    大表连接大表时，如果是null值造成数据倾斜，那么把null值变成一个字符串加上随机数（赋予null值新的key值），把这部分倾斜
+的数据分发到不同的reduce上，由于这个字符串关联不上，处理后并不影响最终结果。
+
+③、count distinct大量相同特殊值：
+    count distinct时，将值为null的情况单独处理，如果是计算count distinct，可以不用处理，直接过滤，在最后结果中加1。
+如果还有其他计算，需要进行group by，可以先将值为空的记录单独处理，再和其他计算结果进行union。
+
+④、采用sum() group by的方式来代替count(distinct)完成计算：
+    select count(distinct colA) from table1;
+    select count(1) from (select colA from table1 group by colA) alias_1;   group by 也可以去重
+
+3、特殊情况特殊处理：
+    在业务逻辑优化的效果不好的情况下，可以将倾斜的数据单独拿出来处理，最后union回去。

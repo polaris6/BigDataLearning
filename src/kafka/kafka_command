@@ -20,3 +20,4 @@
 2、消费者从头开始消费：
     ①、使用一个全新的"group.id"（就是之前没有被任何消费者使用过）
     ②、指定"auto.offset.reset"参数的值为earliest
+3、kafka console的消息只显示value，用kafka-console-producer发送的消息和kafka-console-consumer消费的消息，默认key为null

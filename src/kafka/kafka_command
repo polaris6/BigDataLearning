@@ -1,3 +1,4 @@
+一、Kafka命令
 1、启动zookeeper
     ./bin/zookeeper-server-start.sh config/zookeeper.properties
 2、启动kafka
@@ -14,3 +15,8 @@
     ./bin/kafka-console-consumer.sh --bootstrap-server 192.168.222.5:9092 --topic test --from-beginning
 
 
+二、踩过的坑
+1、本机连远程服务器，一定要关闭服务器的防火墙或开放端口
+2、消费者从头开始消费：
+    ①、使用一个全新的"group.id"（就是之前没有被任何消费者使用过）
+    ②、指定"auto.offset.reset"参数的值为earliest
